@@ -394,16 +394,16 @@
             </div>
           )}
 
-          {/* Vista previa izquierda */}
-          <div className="w-full md:w-1/2 min-h-[520px] md:h-screen relative bg-slate-900 flex flex-col items-center justify-center p-6 md:p-12 overflow-hidden border-b md:border-b-0 md:border-r border-slate-800">
+          {/* Vista previa izquierda (Solo sticky en móvil, sin alterar la versión web) */}
+          <div className="w-full md:w-1/2 min-h-[300px] max-h-[45vh] md:max-h-none md:min-h-[520px] md:h-screen sticky top-0 md:relative z-30 bg-slate-900 flex flex-col items-center justify-center p-4 md:p-12 overflow-y-auto md:overflow-hidden border-b md:border-b-0 md:border-r border-slate-800 shadow-xl md:shadow-none">
             
             <div className="absolute w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-3xl glow-effect pointer-events-none"></div>
 
-            <div className="relative w-full h-full flex flex-col items-center justify-center gap-6 z-10 my-auto max-w-xl">
+            <div className="relative w-full h-full flex flex-col items-center justify-center gap-4 md:gap-6 z-10 my-auto max-w-xl">
               
-              <div className="bg-slate-900/90 backdrop-blur-md px-6 py-3 rounded-2xl border border-slate-700 text-center shadow-xl flex flex-col items-center gap-1">
+              <div className="bg-slate-900/90 backdrop-blur-md px-4 py-1.5 md:px-6 md:py-3 rounded-2xl border border-slate-700 text-center shadow-xl flex flex-col items-center gap-1">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-black text-orange-400">Banderillas</h1>
+                  <h1 className="text-base md:text-xl font-black text-orange-400">Banderillas</h1>
                   <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
                     isOpen 
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
@@ -413,18 +413,18 @@
                     {isOpen ? 'Abierto Ahora' : 'Local Cerrado'}
                   </span>
                 </div>
-                <p className="text-xs text-slate-300">Horario: 1:00 PM - 11:00 PM</p>
+                <p className="text-[10px] md:text-xs text-slate-300">Horario: 1:00 PM - 11:00 PM</p>
               </div>
 
-              <div className="relative flex justify-center items-center w-full min-h-[260px]">
-                <div className="absolute top-2 right-4 flex flex-col gap-1.5 z-20 items-end">
+              <div className="relative flex justify-center items-center w-full min-h-[160px] md:min-h-[260px]">
+                <div className="absolute top-0 right-2 md:top-2 md:right-4 flex flex-col gap-1.5 z-20 items-end">
                   {selectedBase && selectedBase.badge && (
-                    <span className="bg-orange-500 text-white text-[11px] font-extrabold px-3 py-1 rounded-full shadow-lg border border-orange-300">
+                    <span className="bg-orange-500 text-white text-[10px] md:text-[11px] font-extrabold px-2.5 py-0.5 md:px-3 md:py-1 rounded-full shadow-lg border border-orange-300">
                       {selectedBase.badge}
                     </span>
                   )}
                   {selectedCoating && selectedCoating.badge && (
-                    <span className="bg-amber-400 text-slate-950 text-[11px] font-extrabold px-3 py-1 rounded-full shadow-lg border border-amber-300">
+                    <span className="bg-amber-400 text-slate-950 text-[10px] md:text-[11px] font-extrabold px-2.5 py-0.5 md:px-3 md:py-1 rounded-full shadow-lg border border-amber-300">
                       {selectedCoating.badge}
                     </span>
                   )}
@@ -436,29 +436,29 @@
                       src={selectedCoating.image} 
                       alt={selectedCoating.name}
                       fallbackEmoji="🌭"
-                      className="max-h-[260px] md:max-h-[340px] w-auto object-cover rounded-3xl shadow-2xl border-2 border-orange-500/40"
+                      className="max-h-[160px] md:max-h-[340px] w-auto object-cover rounded-2xl md:rounded-3xl shadow-2xl border-2 border-orange-500/40"
                     />
                   </div>
                 ) : (
-                  <div className="w-64 h-64 border-2 border-dashed border-slate-700 rounded-3xl flex flex-col items-center justify-center text-center p-6 text-slate-400">
-                    <span className="text-5xl mb-2 opacity-50">🌭</span>
+                  <div className="w-40 h-40 md:w-64 md:h-64 border-2 border-dashed border-slate-700 rounded-2xl md:rounded-3xl flex flex-col items-center justify-center text-center p-4 md:p-6 text-slate-400">
+                    <span className="text-3xl md:text-5xl mb-1 md:mb-2 opacity-50">🌭</span>
                     <span className="text-xs font-bold text-slate-300">Arma tu banderilla</span>
-                    <span className="text-[10px] mt-1 text-slate-400">Selecciona las opciones a la derecha</span>
+                    <span className="text-[10px] mt-1 text-slate-400">Selecciona las opciones abajo</span>
                   </div>
                 )}
               </div>
 
-              <div className="w-full flex flex-wrap items-center justify-center gap-3 z-20 pt-2">
+              <div className="w-full flex flex-wrap items-center justify-center gap-2 md:gap-3 z-20 pt-1 md:pt-2">
                 {selectedBase ? (
-                  <div className="flex items-center gap-2 bg-orange-500/20 border-2 border-orange-500/60 px-4 py-1.5 rounded-2xl shadow-xl">
-                    <span className="text-base">{selectedBase.icon}</span>
+                  <div className="flex items-center gap-2 bg-orange-500/20 border-2 border-orange-500/60 px-3 py-1 md:px-4 md:py-1.5 rounded-xl md:rounded-2xl shadow-xl">
+                    <span className="text-sm md:text-base">{selectedBase.icon}</span>
                     <div className="flex flex-col text-left">
-                      <span className="text-[10px] text-orange-400 font-extrabold uppercase tracking-wider">Relleno Base</span>
-                      <span className="text-xs font-bold text-white">{selectedBase.name}</span>
+                      <span className="text-[9px] md:text-[10px] text-orange-400 font-extrabold uppercase tracking-wider">Relleno Base</span>
+                      <span className="text-[11px] md:text-xs font-bold text-white">{selectedBase.name}</span>
                     </div>
                   </div>
                 ) : (
-                  <span className="text-xs text-slate-400 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">Sin Relleno</span>
+                  <span className="text-[10px] md:text-xs text-slate-400 bg-slate-800/80 px-2.5 py-1 md:px-3 md:py-1.5 rounded-xl border border-slate-700">Sin Relleno</span>
                 )}
 
                 {selectedSauces.map(sId => {
@@ -467,25 +467,25 @@
                   return (
                     <div 
                       key={sId} 
-                      className="flex items-center gap-2 bg-slate-900 text-white border border-slate-700 px-4 py-2 rounded-2xl shadow-xl"
+                      className="flex items-center gap-1.5 md:gap-2 bg-slate-900 text-white border border-slate-700 px-3 py-1 md:px-4 md:py-2 rounded-xl md:rounded-2xl shadow-xl"
                     >
-                      <SafeImage src={sData.image} alt={sData.name} fallbackEmoji="🥫" className="w-6 h-6 rounded-full object-cover border border-slate-600" />
-                      <span className="text-xs font-bold">{sData.name}</span>
+                      <SafeImage src={sData.image} alt={sData.name} fallbackEmoji="🥫" className="w-5 h-5 md:w-6 md:h-6 rounded-full object-cover border border-slate-600" />
+                      <span className="text-[10px] md:text-xs font-bold">{sData.name}</span>
                     </div>
                   );
                 })}
 
                 {selectedDrink && (
-                  <div className="flex items-center gap-2.5 bg-amber-500/20 border-2 border-amber-500/60 px-4 py-1.5 rounded-2xl shadow-2xl">
+                  <div className="flex items-center gap-2 bg-amber-500/20 border-2 border-amber-500/60 px-3 py-1 md:px-4 md:py-1.5 rounded-xl md:rounded-2xl shadow-2xl">
                     <SafeImage 
                       src={selectedDrink.image} 
                       alt={selectedDrink.name} 
                       fallbackEmoji="🥤"
-                      className="w-8 h-8 rounded-lg object-cover border border-amber-400/80 shadow-md"
+                      className="w-6 h-6 md:w-8 md:h-8 rounded-lg object-cover border border-amber-400/80 shadow-md"
                     />
                     <div className="flex flex-col text-left">
-                      <span className="text-[10px] text-amber-400 font-extrabold uppercase tracking-wider">Bebida</span>
-                      <span className="text-xs font-bold text-white">{selectedDrink.name}</span>
+                      <span className="text-[9px] md:text-[10px] text-amber-400 font-extrabold uppercase tracking-wider">Bebida</span>
+                      <span className="text-[11px] md:text-xs font-bold text-white">{selectedDrink.name}</span>
                     </div>
                   </div>
                 )}
@@ -495,7 +495,7 @@
           </div>
 
           {/* Panel Lateral */}
-          <div className="w-full md:w-1/2 p-6 md:p-10 overflow-y-auto max-h-screen bg-slate-950 flex flex-col justify-between">
+          <div className="w-full md:w-1/2 p-6 md:p-10 overflow-y-auto md:max-h-screen bg-slate-950 flex flex-col justify-between">
             <div>
               <div className="mb-6">
                 <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2.5">Recetas Firma de la Casa</h3>
