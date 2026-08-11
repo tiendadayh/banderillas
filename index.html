@@ -15,6 +15,11 @@
   <meta property="og:description" content="¡Arma tu combinación favorita de 3 banderillas coreanas y haz tu pedido a domicilio!">
   <meta property="og:image" content="portada.jpg">
 
+  <!-- Fuentes para el Badge Custom -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@800;900&display=swap" rel="stylesheet">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -45,6 +50,55 @@
     .animate-pop {
       animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
+
+    /* Estilos del Badge Neón Exacto de la Imagen */
+    .badge-header {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 10px 28px;
+      background-color: #0b0e14;
+      border: 2px solid #ff5500;
+      border-radius: 9999px;
+      box-shadow: 0 0 15px rgba(255, 85, 0, 0.45), inset 0 0 8px rgba(255, 85, 0, 0.2);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .badge-header:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 0 25px rgba(255, 85, 0, 0.75), inset 0 0 12px rgba(255, 85, 0, 0.3);
+      border-color: #ff6a00;
+    }
+
+    .badge-header .badge-icon {
+      font-size: 1.4rem;
+      line-height: 1;
+      filter: drop-shadow(0 0 4px rgba(255, 85, 0, 0.5));
+    }
+
+    .badge-header .title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 900;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #ff5500;
+      text-shadow: 0 0 8px rgba(255, 85, 0, 0.4);
+    }
+
+    @media (min-width: 768px) {
+      .badge-header {
+        padding: 12px 36px;
+      }
+      .badge-header .title {
+        font-size: 1.6rem;
+      }
+      .badge-header .badge-icon {
+        font-size: 1.8rem;
+      }
+    }
   </style>
 </head>
 
@@ -56,9 +110,15 @@
 
     <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 items-center relative z-10">
       <div class="space-y-6 text-center md:text-left">
-        <span class="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/30 text-orange-400 font-bold text-xs uppercase tracking-widest px-3.5 py-1.5 rounded-full">
-          🌭🔥 Banderillas Coreanas
-        </span>
+        
+        <!-- BADGE RESTRUCTURADO COMO LA IMAGEN -->
+        <div class="flex justify-center md:justify-start">
+          <div class="badge-header">
+            <span class="badge-icon">🌭</span>
+            <span class="title">BANDERILLAS COREANAS</span>
+            <span class="badge-icon">🔥</span>
+          </div>
+        </div>
 
         <h1 class="text-4xl md:text-6xl font-black text-white leading-tight">
           El Sabor Perfecto en <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-400">Cada Bocado</span>
@@ -465,7 +525,6 @@
                     {validationErrors.customerPhone && <span className="text-[10px] text-red-400 mt-1 block">Ingresa un teléfono válido</span>}
                   </div>
 
-                  {/* SOLO EFECTIVO Y TRANSFERENCIA */}
                   <div>
                     <label className="text-xs font-bold text-slate-200 block mb-1.5">Método de Pago:</label>
                     <select
