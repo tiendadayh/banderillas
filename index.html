@@ -4,15 +4,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
+
   <title>Banderillas Coreanas | Pide en Línea</title>
-  <meta name="description" content="Personaliza y pide las mejores banderillas coreanas a domicilio. Elige tu base, empanizado, salsas y bebidas. ¡Haz tu pedido por WhatsApp!">
+  <meta name="description"
+    content="Personaliza y pide las mejores banderillas coreanas a domicilio. Elige tu base, empanizado, salsas y bebidas. ¡Haz tu pedido por WhatsApp!">
   <meta name="keywords" content="banderillas coreanas, comida coreana, snacks, empanizados, delivery, restaurante">
   <meta name="theme-color" content="#f97316">
 
   <meta property="og:type" content="website">
   <meta property="og:title" content="Banderillas Coreanas | Personaliza tu Orden">
-  <meta property="og:description" content="¡Arma tu combinación favorita de 3 banderillas coreanas y haz tu pedido a domicilio!">
+  <meta property="og:description"
+    content="¡Arma tu combinación favorita de 3 banderillas coreanas y haz tu pedido a domicilio!">
   <meta property="og:image" content="portada.jpg">
 
   <!-- Fuentes para el Badge Custom -->
@@ -32,50 +34,85 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
+    /* Configuración de escena 3D global */
+    body {
+      perspective: 1200px;
+    }
+
     @keyframes pulseGlow {
-      0%, 100% { opacity: 0.3; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(1.03); }
+
+      0%,
+      100% {
+        opacity: 0.3;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.6;
+        transform: scale(1.03);
+      }
     }
 
     .glow-effect {
       animation: pulseGlow 4s infinite ease-in-out;
     }
 
+    /* 1. GLOW DINÁMICO EN EL BADGE PRINCIPAL CON SOMBRAS 3D */
+    @keyframes neonGlow {
+
+      0%,
+      100% {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 85, 0, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+        border-color: #ff5500;
+      }
+
+      50% {
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), 0 0 28px rgba(255, 106, 0, 0.85), inset 0 1px 3px rgba(255, 255, 255, 0.6);
+        border-color: #ff7700;
+      }
+    }
+
     @keyframes popIn {
-      0% { transform: scale(0.92); opacity: 0.7; }
-      50% { transform: scale(1.03); }
-      100% { transform: scale(1); opacity: 1; }
+      0% {
+        transform: scale(0.9) translateY(20px);
+        opacity: 0;
+      }
+
+      100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+      }
     }
 
     .animate-pop {
       animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    /* Estilos del Badge Neón Exacto de la Imagen */
+    /* Estilos del Badge Neón Animado 3D */
     .badge-header {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 12px;
       padding: 10px 28px;
-      background-color: #0b0e14;
+      background: linear-gradient(145deg, #131822, #080a0f);
       border: 2px solid #ff5500;
       border-radius: 9999px;
-      box-shadow: 0 0 15px rgba(255, 85, 0, 0.45), inset 0 0 8px rgba(255, 85, 0, 0.2);
-      transition: all 0.3s ease;
+      animation: neonGlow 2.5s infinite ease-in-out;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       cursor: pointer;
+      transform-style: preserve-3d;
     }
 
     .badge-header:hover {
-      transform: translateY(-2px) scale(1.02);
-      box-shadow: 0 0 25px rgba(255, 85, 0, 0.75), inset 0 0 12px rgba(255, 85, 0, 0.3);
-      border-color: #ff6a00;
+      transform: translateY(-4px) rotateX(8deg) scale(1.03);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 35px rgba(255, 85, 0, 0.9);
     }
 
     .badge-header .badge-icon {
       font-size: 1.4rem;
       line-height: 1;
-      filter: drop-shadow(0 0 4px rgba(255, 85, 0, 0.5));
+      filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
     }
 
     .badge-header .title {
@@ -85,16 +122,52 @@
       letter-spacing: 1.2px;
       text-transform: uppercase;
       color: #ff5500;
-      text-shadow: 0 0 8px rgba(255, 85, 0, 0.4);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 10px rgba(255, 85, 0, 0.6);
+    }
+
+    /* TARJETAS CON EFECTO VOLUMÉTRICO Y GLASSMORPHISM 3D */
+    .card-3d-glass {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255, 255, 255, 0.25);
+      border-left: 1px solid rgba(255, 255, 255, 0.15);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.5);
+      border-right: 1px solid rgba(0, 0, 0, 0.4);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transform-style: preserve-3d;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .card-3d-interactive {
+      transform-style: preserve-3d;
+      transition: all 0.3s ease;
+    }
+
+    .card-3d-interactive:hover {
+      transform: translateY(-6px) rotateX(6deg) rotateY(-4deg);
+      box-shadow: -10px 20px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(249, 115, 22, 0.2);
+    }
+
+    /* Ocultar scrollbars manteniendo scroll */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
 
     @media (min-width: 768px) {
       .badge-header {
         padding: 12px 36px;
       }
+
       .badge-header .title {
         font-size: 1.6rem;
       }
+
       .badge-header .badge-icon {
         font-size: 1.8rem;
       }
@@ -102,16 +175,20 @@
   </style>
 </head>
 
-<body class="bg-slate-950 text-slate-100 font-sans selection:bg-orange-500 selection:text-white transition-colors duration-300 overflow-x-hidden">
+<body
+  class="bg-slate-950 text-slate-100 font-sans selection:bg-orange-500 selection:text-white transition-colors duration-300 overflow-x-hidden">
 
   <!-- PORTADA / HERO SECTION -->
-  <header class="relative overflow-hidden bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 border-b border-slate-800 py-12 md:py-20 px-6 md:px-12">
-    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-3xl pointer-events-none glow-effect"></div>
+  <header
+    class="relative overflow-hidden bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 border-b border-slate-800/80 py-12 md:py-20 px-6 md:px-12">
+    <div
+      class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-3xl pointer-events-none glow-effect">
+    </div>
 
     <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 items-center relative z-10">
       <div class="space-y-6 text-center md:text-left">
-        
-        <!-- BADGE RESTRUCTURADO COMO LA IMAGEN -->
+
+        <!-- BADGE NEÓN ANIMADO -->
         <div class="flex justify-center md:justify-start">
           <div class="badge-header">
             <span class="badge-icon">🌭</span>
@@ -120,39 +197,46 @@
           </div>
         </div>
 
-        <h1 class="text-4xl md:text-6xl font-black text-white leading-tight">
-          El Sabor Perfecto en <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-400">Cada Bocado</span>
+        <h1 class="text-4xl md:text-6xl font-black text-white leading-tight drop-shadow-lg">
+          El Sabor Perfecto en <span
+            class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-400">Cada Bocado</span>
         </h1>
 
         <p class="text-slate-300 text-sm md:text-base leading-relaxed max-w-lg mx-auto md:mx-0">
           ¡Elige tu combinación favorita y personaliza el empanizado de cada una de tus 3 banderillas!
         </p>
 
-        <div class="bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border border-amber-500/40 rounded-2xl p-3.5 max-w-lg shadow-lg">
-          <p class="text-xs md:text-sm font-extrabold text-amber-300 flex items-center justify-center md:justify-start gap-2">
+        <!-- Glassmorphism 3D card -->
+        <div class="card-3d-glass rounded-2xl p-4 max-w-lg">
+          <p
+            class="text-xs md:text-sm font-extrabold text-amber-300 flex items-center justify-center md:justify-start gap-2">
             <span>📌</span>
             <span>TODAS LAS ÓRDENES INCLUYEN 3 BANDERILLAS PERSONALIZABLES</span>
           </p>
         </div>
 
         <div class="flex flex-wrap justify-center md:justify-start gap-4 pt-2">
-          <a href="#creador" class="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 active:scale-95 text-white font-extrabold px-6 py-3.5 rounded-2xl shadow-lg shadow-orange-500/20 transition-all transform text-sm flex items-center gap-2">
+          <a href="#creador"
+            class="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 active:scale-95 text-white font-extrabold px-6 py-3.5 rounded-2xl shadow-xl shadow-orange-500/30 transition-all transform hover:-translate-y-1 text-sm flex items-center gap-2 border-t border-white/30">
             <span>Armar mi Orden</span>
             <span>🌭</span>
           </a>
         </div>
       </div>
 
-      <div class="relative flex justify-center">
-        <div class="absolute -top-3 -right-3 z-20 bg-amber-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-full shadow-lg border border-amber-300 transform rotate-6">
+      <div class="relative flex justify-center" style="perspective: 1000px;">
+        <div
+          class="absolute -top-3 -right-3 z-20 bg-amber-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-full shadow-2xl border border-amber-200 transform rotate-6 hover:scale-110 transition-transform">
           ⭐ ¡3 Banderillas x Orden!
         </div>
 
-        <div class="relative group w-full max-w-md">
-          <div class="absolute -inset-1 bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
+        <div class="relative group w-full max-w-md card-3d-interactive">
+          <div
+            class="absolute -inset-1 bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl blur opacity-30 group-hover:opacity-70 transition duration-500">
+          </div>
 
           <img src="portada.jpg" alt="Portada Banderillas Coreanas"
-            class="relative rounded-3xl border-2 border-slate-700 object-cover w-full h-72 md:h-96 shadow-2xl transition-transform duration-300 group-hover:scale-[1.01]"
+            class="relative rounded-3xl border-t border-l border-white/20 object-cover w-full h-72 md:h-96 shadow-2xl"
             onerror="this.src='https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&w=800&q=80'" />
         </div>
       </div>
@@ -169,7 +253,7 @@
 
     const PHONE_NUMBER = "527442411773";
     const OPEN_HOUR = 13;
-    const CLOSE_HOUR = 20;
+    const CLOSE_HOUR = 1;
 
     const PLACEHOLDER_FOOD = "https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&w=400&q=80";
     const PLACEHOLDER_DRINK = "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&q=80";
@@ -218,13 +302,13 @@
     ];
 
     const coatings = [
-      { id: 'panko', name: 'Clásica (Panko)', price: 0, badge: '🔥 Crujiente', image: 'panko.jpg' },
-      { id: 'cheetos', name: 'Cheetos de Queso', price: 0, badge: '🧀 Quesoso', image: 'cheetos.jpg' },
-      { id: 'flamin', name: 'Cheetos Flamin’ Hot', price: 0, badge: '🔥 Picoso', image: 'flamin.jpg' },
-      { id: 'takis', name: 'Takis Azules', price: 0, badge: '🔵 Picante', image: 'takis.jpg' },
-      { id: 'papas', name: 'Papa', price: 0, badge: '🥔 Crujiente', image: 'papas.jpg' },
-      { id: 'ramen', name: 'Ramen', price: 0, badge: '🍜 Tostado', image: 'ramen.jpg' },
-      { id: 'jalapeno', name: 'Jalapeño', price: 0, badge: '🌶️ Especial', image: 'jalapeno.jpg' }
+      { id: 'panko', name: 'Clásica (Panko)', price: 0, badge: 'Crujiente', image: 'panko.jpg' },
+      { id: 'cheetos', name: 'Cheetos de Queso', price: 0, badge: 'Quesoso', image: 'cheetos.jpg' },
+      { id: 'flamin', name: 'Cheetos Flamin’ Hot', price: 0, badge: 'Picoso', image: 'flamin.jpg' },
+      { id: 'takis', name: 'Takis Azules', price: 0, badge: 'Picante', image: 'takis.jpg' },
+      { id: 'papas', name: 'Papa', price: 0, badge: 'Crujiente', image: 'papas.jpg' },
+      { id: 'ramen', name: 'Ramen', price: 0, badge: 'Tostado', image: 'ramen.jpg' },
+      { id: 'jalapeno', name: 'Jalapeño', price: 0, badge: 'Especial', image: 'jalapeno.jpg' }
     ];
 
     const availableSauces = [
@@ -250,8 +334,8 @@
       const [imgSrc, setImgSrc] = useState(src);
       const [errorCount, setErrorCount] = useState(0);
 
-      useEffect(() => { 
-        setImgSrc(src); 
+      useEffect(() => {
+        setImgSrc(src);
         setErrorCount(0);
       }, [src]);
 
@@ -283,6 +367,7 @@
             Elige el Cubierto para cada Banderilla
           </h3>
 
+          {/* Slots de Banderillas con Elevación 3D */}
           <div className="grid grid-cols-3 gap-2 mb-3">
             {[0, 1, 2].map((slotIdx) => {
               const isCurrentSlot = activeSlot === slotIdx;
@@ -293,16 +378,15 @@
                   type="button"
                   aria-label={`Seleccionar banderilla ${slotIdx + 1}`}
                   onClick={() => onSelectSlot(slotIdx)}
-                  className={`py-2 px-1 rounded-xl text-xs font-bold transition-all transform active:scale-95 flex flex-col items-center justify-center border ${
-                    isCurrentSlot
-                      ? 'bg-orange-500 text-white border-orange-400 shadow-md ring-2 ring-orange-500/50 scale-[1.02]'
-                      : coatingSelected
-                      ? 'bg-slate-800 text-orange-300 border-orange-500/40 hover:scale-[1.01]'
-                      : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700 hover:scale-[1.01]'
-                  }`}
+                  className={`py-2 px-1 rounded-xl text-xs font-bold transition-all duration-300 transform active:scale-95 flex flex-col items-center justify-center border ${isCurrentSlot
+                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-orange-300 shadow-xl shadow-orange-500/40 -translate-y-1 scale-105 ring-2 ring-orange-400/80 z-10'
+                    : coatingSelected
+                      ? 'card-3d-glass text-orange-300 border-orange-500/40 hover:-translate-y-0.5'
+                      : 'card-3d-glass text-slate-400 hover:border-slate-700 hover:-translate-y-0.5'
+                    }`}
                 >
-                  <span className="text-xs opacity-90">Banderilla #{slotIdx + 1}</span>
-                  <span className="truncate max-w-full text-xs font-extrabold">
+                  <span className="text-[10px] opacity-90 uppercase tracking-wider font-extrabold">Banderilla #{slotIdx + 1}</span>
+                  <span className="truncate max-w-full text-xs font-black">
                     {coatingSelected ? coatingSelected.name : 'Elegir'}
                   </span>
                 </button>
@@ -310,7 +394,8 @@
             })}
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
+          {/* Carrusel Deslizable Horizontal (Swipeable) */}
+          <div className="flex overflow-x-auto gap-2.5 pb-2 pt-1 no-scrollbar snap-x snap-mandatory">
             {coatings.map(c => {
               const isSelectedInCurrentSlot = selectedCoatings[activeSlot]?.id === c.id;
               return (
@@ -319,16 +404,16 @@
                   type="button"
                   aria-label={`Empanizado ${c.name}`}
                   onClick={() => onSelectCoating(c)}
-                  className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all transform hover:scale-[1.02] active:scale-95 ${isSelectedInCurrentSlot
-                    ? 'border-orange-500 bg-orange-500/20 text-white shadow-lg font-semibold ring-1 ring-orange-500/30'
-                    : 'border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700'
+                  className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all duration-300 transform active:scale-95 flex-shrink-0 w-36 snap-start card-3d-glass ${isSelectedInCurrentSlot
+                    ? 'border-orange-500 bg-orange-500/30 text-white shadow-xl shadow-orange-500/20 ring-1 ring-orange-500/50 -translate-y-1'
+                    : 'hover:border-slate-600 hover:-translate-y-0.5'
                     }`}
                 >
                   <div className="flex flex-col">
                     <span className="font-semibold text-xs text-slate-200">{c.name}</span>
-                    <span className="text-xs text-orange-400/90 mt-0.5">{c.badge}</span>
+                    <span className="text-[10px] text-orange-400 font-bold mt-0.5">{c.badge}</span>
                   </div>
-                  <span className="text-xs font-bold text-emerald-400 mt-2">
+                  <span className="text-[10px] font-extrabold text-emerald-400 mt-2">
                     {isSelectedInCurrentSlot ? '✓ Seleccionado' : 'Asignar a #' + (activeSlot + 1)}
                   </span>
                 </button>
@@ -343,14 +428,14 @@
       return (
         <div className="mb-6">
           <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2.5">Recetas Recomendadas</h3>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar snap-x">
             {presets.map((preset, idx) => (
               <button
                 key={idx}
                 type="button"
                 aria-label={`Cargar receta ${preset.name}`}
                 onClick={() => onApply(preset)}
-                className="bg-slate-900 hover:bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-xs px-3 py-1.5 rounded-xl transition-all transform font-medium flex items-center gap-1 shadow-sm"
+                className="card-3d-glass hover:bg-slate-800/90 active:scale-95 text-slate-200 border border-white/15 text-xs px-3 py-1.5 rounded-xl transition-all transform font-medium flex items-center gap-1 shadow-md hover:-translate-y-0.5 flex-shrink-0 snap-start"
               >
                 {preset.name}
               </button>
@@ -384,19 +469,19 @@
       const totalCartPrice = cart.reduce((a, b) => a + b.price, 0);
 
       return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex justify-end z-50 animate-pop">
-          <div className="bg-slate-900 w-full max-w-md h-full max-h-screen p-5 flex flex-col justify-between border-l border-slate-800 shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex justify-end z-50 animate-pop">
+          <div className="card-3d-glass w-full max-w-md h-full max-h-screen p-5 flex flex-col justify-between border-l border-white/20 shadow-2xl overflow-hidden">
 
-            <div className="flex-shrink-0 flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+            <div className="flex-shrink-0 flex justify-between items-center mb-4 border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <h3 className="text-xl font-black text-white">Tu Pedido Detallado</h3>
-                <span className="bg-orange-500 text-white font-bold text-xs px-2.5 py-0.5 rounded-full">{cart.length}</span>
+                <span className="bg-orange-500 text-white font-bold text-xs px-2.5 py-0.5 rounded-full shadow-md">{cart.length}</span>
               </div>
               <button type="button" aria-label="Cerrar carrito" onClick={onClose} className="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
             </div>
 
             <div className="flex-1 overflow-y-auto pr-1 space-y-4 min-h-0">
-              <div className="bg-slate-800/90 border border-amber-500/40 p-3 rounded-2xl flex items-center gap-3">
+              <div className="card-3d-glass border-amber-500/40 p-3 rounded-2xl flex items-center gap-3">
                 <span className="text-2xl">⏱️</span>
                 <div>
                   <span className="text-xs font-bold text-amber-400 block uppercase tracking-wide">Tiempo Estimado</span>
@@ -411,8 +496,8 @@
                   <p className="text-slate-300 text-center py-8 text-sm">Tu carrito está vacío 🌭</p>
                 ) : (
                   cart.map((item, idx) => (
-                    <div key={item.id} className="bg-slate-800/90 border border-slate-700 p-4 rounded-2xl space-y-3">
-                      <div className="flex justify-between items-start border-b border-slate-700/60 pb-2">
+                    <div key={item.id} className="card-3d-glass p-4 rounded-2xl space-y-3">
+                      <div className="flex justify-between items-start border-b border-white/10 pb-2">
                         <span className="text-xs font-black text-orange-400 uppercase tracking-wider">Orden #{idx + 1} (3 Banderillas)</span>
                         <div className="flex items-center gap-3">
                           <span className="font-black text-orange-400 text-sm">${item.price} MXN</span>
@@ -430,16 +515,16 @@
 
                       <div className="font-bold text-sm text-white">{item.base}</div>
 
-                      <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 space-y-2">
+                      <div className="bg-slate-950/80 p-2.5 rounded-xl border border-white/10 space-y-2 shadow-inner">
                         <span className="text-xs text-slate-300 font-extrabold uppercase tracking-wider block">Cubiertos de la Orden:</span>
                         <div className="grid grid-cols-3 gap-1.5">
                           {item.coatings.map((c, cIdx) => (
-                            <div key={cIdx} className="bg-slate-900 p-1.5 rounded-lg border border-slate-700 flex flex-col items-center text-center">
+                            <div key={cIdx} className="bg-slate-900/90 p-1.5 rounded-lg border border-slate-700/80 flex flex-col items-center text-center shadow">
                               <SafeImage
                                 src={c.image}
                                 alt={c.name}
                                 fallbackEmoji="🌭"
-                                className="w-8 h-8 object-cover rounded-md mb-1"
+                                className="w-8 h-8 object-cover rounded-md mb-1 border border-white/10"
                               />
                               <span className="text-xs text-slate-300 font-bold">#{cIdx + 1}</span>
                               <span className="text-xs font-bold text-slate-200 truncate w-full">{c.name}</span>
@@ -448,14 +533,14 @@
                         </div>
                       </div>
 
-                      <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 space-y-1.5">
+                      <div className="bg-slate-900/60 p-2.5 rounded-xl border border-white/10 space-y-1.5">
                         <span className="text-xs text-slate-300 font-extrabold uppercase tracking-wider block">Salsas y Extras:</span>
                         <div className="flex flex-wrap gap-2">
                           {item.sauces !== 'Sin salsas ni extras' ? (
                             item.sauces.split(', ').map((sauceName, sIdx) => {
                               const sauceObj = availableSauces.find(s => s.name === sauceName);
                               return (
-                                <div key={sIdx} className="flex items-center gap-1.5 bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">
+                                <div key={sIdx} className="flex items-center gap-1.5 bg-slate-800/90 px-2 py-1 rounded-lg border border-slate-700 shadow-sm">
                                   <SafeImage src={sauceObj?.image} alt={sauceName} fallbackEmoji="🥫" className="w-4 h-4 rounded-full object-cover" />
                                   <span className="text-xs text-slate-200 font-medium">{sauceName}</span>
                                 </div>
@@ -468,13 +553,13 @@
                       </div>
 
                       {item.drink && (
-                        <div className="bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20 flex items-center gap-3">
+                        <div className="bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/30 flex items-center gap-3">
                           <SafeImage
                             src={item.drinkImage}
                             alt={item.drink}
                             fallbackEmoji="🥤"
                             defaultFallbackUrl={PLACEHOLDER_DRINK}
-                            className="w-10 h-10 object-cover rounded-lg border border-amber-400/50 flex-shrink-0"
+                            className="w-10 h-10 object-cover rounded-lg border border-amber-400/50 flex-shrink-0 shadow"
                           />
                           <div>
                             <span className="text-xs text-amber-400 font-extrabold uppercase tracking-wider block">Bebida:</span>
@@ -488,7 +573,7 @@
               </div>
 
               {cart.length > 0 && (
-                <div className="space-y-3 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                <div className="space-y-3 bg-slate-950/90 p-4 rounded-2xl border border-white/10 shadow-lg">
                   <div>
                     <label className="text-xs font-bold text-slate-200 block mb-1.5">
                       Nombre para la entrega <span className="text-orange-400">*</span>
@@ -498,11 +583,10 @@
                       placeholder="Ej. Juan Pérez"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      className={`w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 transition-all ${
-                        validationErrors.customerName 
-                          ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20' 
-                          : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'
-                      }`}
+                      className={`w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 transition-all ${validationErrors.customerName
+                        ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20'
+                        : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'
+                        }`}
                     />
                     {validationErrors.customerName && <span className="text-[10px] text-red-400 mt-1 block">Este campo es requerido</span>}
                   </div>
@@ -516,11 +600,10 @@
                       placeholder="Ej. 7441234567"
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)}
-                      className={`w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 transition-all ${
-                        validationErrors.customerPhone 
-                          ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20' 
-                          : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'
-                      }`}
+                      className={`w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 transition-all ${validationErrors.customerPhone
+                        ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20'
+                        : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'
+                        }`}
                     />
                     {validationErrors.customerPhone && <span className="text-[10px] text-red-400 mt-1 block">Ingresa un teléfono válido</span>}
                   </div>
@@ -546,7 +629,7 @@
                         aria-label="Entrega a domicilio"
                         onClick={() => { playSound('click'); setDeliveryType('delivery'); }}
                         className={`py-2 rounded-xl text-xs font-bold transition-all transform active:scale-95 border ${deliveryType === 'delivery'
-                          ? 'bg-orange-500 text-white border-orange-400 shadow'
+                          ? 'bg-orange-500 text-white border-orange-400 shadow-lg'
                           : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-600'
                           }`}
                       >
@@ -557,7 +640,7 @@
                         aria-label="Recoger en tienda"
                         onClick={() => { playSound('click'); setDeliveryType('pickup'); }}
                         className={`py-2 rounded-xl text-xs font-bold transition-all transform active:scale-95 border ${deliveryType === 'pickup'
-                          ? 'bg-orange-500 text-white border-orange-400 shadow'
+                          ? 'bg-orange-500 text-white border-orange-400 shadow-lg'
                           : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-600'
                           }`}
                       >
@@ -576,11 +659,10 @@
                         placeholder="Calle, número, colonia..."
                         value={deliveryAddress}
                         onChange={(e) => setDeliveryAddress(e.target.value)}
-                        className={`w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 transition-all ${
-                          validationErrors.deliveryAddress 
-                            ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20' 
-                            : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'
-                        }`}
+                        className={`w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 transition-all ${validationErrors.deliveryAddress
+                          ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20'
+                          : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'
+                          }`}
                       />
                       {validationErrors.deliveryAddress && <span className="text-[10px] text-red-400 mt-1 block">Ingresa tu dirección</span>}
                     </div>
@@ -589,7 +671,7 @@
               )}
             </div>
 
-            <div className="flex-shrink-0 pt-3 border-t border-slate-800 mt-2 bg-slate-900 space-y-3">
+            <div className="flex-shrink-0 pt-3 border-t border-white/10 mt-2 bg-slate-950/90 space-y-3">
               <div className="space-y-1">
                 <div className="flex justify-between text-xs text-slate-300">
                   <span>Subtotal:</span>
@@ -601,7 +683,7 @@
                     <span className="text-emerald-400 font-extrabold">¡Gratis!</span>
                   </div>
                 )}
-                <div className="flex justify-between font-black text-lg text-white pt-1.5 border-t border-slate-800">
+                <div className="flex justify-between font-black text-lg text-white pt-1.5 border-t border-white/10">
                   <span>Total Final:</span>
                   <span className="text-orange-400">
                     ${totalCartPrice} MXN
@@ -721,6 +803,10 @@
       const cartTotalCount = cart.length;
       const cartTotalPrice = cart.reduce((a, b) => a + b.price, 0);
 
+      // CÓDIGO CORREGIDO PARA PRUEBAS:
+      //useEffect(() => {
+      //setIsOpen(true); // Siempre abierto para desarrollo/pruebas
+      //}, []);
       useEffect(() => {
         const checkOpenStatus = () => {
           const now = new Date();
@@ -875,6 +961,23 @@
         }
 
         playSound('success');
+
+        // Guardar pedido localmente para sincronización de pruebas
+        const newOrderRecord = {
+          id: Date.now(),
+          customer: customerName.trim(),
+          phone: customerPhone.trim(),
+          deliveryType,
+          address: deliveryAddress.trim(),
+          paymentMethod,
+          cart,
+          total: cart.reduce((a, b) => a + b.price, 0),
+          status: 'pending',
+          timestamp: new Date().toISOString()
+        };
+        const existingOrders = JSON.parse(localStorage.getItem('banderillas_orders') || '[]');
+        localStorage.setItem('banderillas_orders', JSON.stringify([...existingOrders, newOrderRecord]));
+
         let message = "🌭 *¡NUEVO PEDIDO BANDERILLAS COREANAS!* 🌭\n";
         message += "📌 *TODAS LAS ÓRDENES INCLUYEN 3 BANDERILLAS*\n\n";
         message += `👤 *Cliente:* ${customerName.trim()}\n`;
@@ -926,17 +1029,17 @@
             </div>
           )}
 
-          {/* Botón Flotante del Carrito */}
+          {/* Botón Flotante del Carrito con Profundidad 3D */}
           {cartTotalCount > 0 && !isCartOpen && (
             <button
               type="button"
               aria-label="Abrir carrito"
               onClick={() => { playSound('click'); setIsCartOpen(true); }}
-              className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold px-5 py-3.5 rounded-full shadow-2xl transition-all transform hover:scale-105 active:scale-95 flex items-center gap-3 border border-orange-300/40"
+              className="fixed bottom-20 md:bottom-6 right-6 z-40 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold px-5 py-3.5 rounded-full shadow-2xl transition-all transform hover:scale-105 active:scale-95 flex items-center gap-3 border-t border-l border-white/40"
             >
               <div className="relative">
                 <span className="text-xl">🛒</span>
-                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border border-white">
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border border-white shadow">
                   {cartTotalCount}
                 </span>
               </div>
@@ -947,23 +1050,23 @@
             </button>
           )}
 
-          {/* Vista previa izquierda */}
-          <div className="w-full md:w-1/2 min-h-[320px] max-h-[45vh] md:max-h-none md:min-h-[520px] md:h-screen sticky top-0 md:relative z-30 bg-slate-900 flex flex-col items-center justify-center p-4 md:p-12 overflow-y-auto md:overflow-hidden border-b md:border-b-0 md:border-r border-slate-800 shadow-xl md:shadow-none">
+          {/* Vista previa izquierda con Perspectiva 3D */}
+          <div className="w-full md:w-1/2 min-h-[340px] max-h-[45vh] md:max-h-none md:min-h-[520px] md:h-screen sticky top-0 md:relative z-30 bg-slate-900/90 backdrop-blur-xl flex flex-col items-center justify-center p-4 md:p-12 overflow-y-auto md:overflow-hidden border-b md:border-b-0 md:border-r border-white/10 shadow-xl md:shadow-none" style={{ perspective: '1000px' }}>
 
             <div className="absolute w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-3xl glow-effect pointer-events-none"></div>
 
             <div className="relative w-full h-full flex flex-col items-center justify-center gap-4 md:gap-6 z-10 my-auto max-w-xl">
 
-              {/* TARJETA CABECERA CENTRADA Y APILADA */}
-              <div className="bg-slate-900/90 backdrop-blur-md px-8 py-5 rounded-3xl border border-slate-800/80 shadow-2xl flex flex-col items-center justify-center text-center gap-2.5 w-full max-w-md">
-                <h1 className="text-xl md:text-2xl font-black text-amber-500 tracking-wide">
+              {/* TARJETA CABECERA GLASSMORPHISM 3D */}
+              <div className="card-3d-glass px-8 py-4 rounded-3xl border border-white/20 shadow-2xl flex flex-col items-center justify-center text-center gap-2 w-full max-w-md">
+                <h1 className="text-xl md:text-2xl font-black text-amber-500 tracking-wide drop-shadow">
                   Banderillas Coreanas
                 </h1>
-                
+
                 <div className="flex items-center justify-center">
                   <span className={`inline-flex items-center justify-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border ${isOpen
-                    ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/30'
-                    : 'bg-rose-950/80 text-rose-400 border-rose-500/30'
+                    ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/40 shadow-sm'
+                    : 'bg-rose-950/80 text-rose-400 border-rose-500/40 shadow-sm'
                     }`}>
                     <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`}></span>
                     {isOpen ? 'Abierto Ahora' : 'Local Cerrado'}
@@ -975,46 +1078,52 @@
                 </p>
               </div>
 
-              {/* Render visual de las 3 Banderillas seleccionadas */}
+              {/* Render visual de las 3 Banderillas en Tarjetas 3DFlotantes */}
               <div className="relative flex justify-center items-center w-full min-h-[180px] md:min-h-[280px]">
                 <div className="grid grid-cols-3 gap-2 md:gap-4 w-full max-w-md">
                   {selectedCoatings.map((c, idx) => {
                     const isEditing = activeCoatingSlot === idx;
                     return (
-                      <div 
-                        key={idx} 
+                      <div
+                        key={idx}
                         onClick={() => handleCoatingSlotSelect(idx)}
-                        className={`relative flex flex-col items-center justify-center p-2 rounded-2xl border-2 transition-all cursor-pointer transform hover:scale-[1.02] ${
-                          isEditing 
-                            ? 'border-orange-500 bg-orange-500/10 shadow-lg ring-2 ring-orange-500/40 scale-105' 
-                            : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
-                        }`}
+                        className={`relative flex flex-col items-center justify-center p-2 rounded-2xl border-2 transition-all cursor-pointer transform card-3d-interactive ${isEditing
+                          ? 'border-orange-500 bg-orange-500/20 shadow-2xl shadow-orange-500/30 scale-105 z-10 -translate-y-2'
+                          : 'card-3d-glass border-white/10 hover:border-slate-600'
+                          }`}
                       >
                         <div className="flex items-center gap-1 mb-1">
                           <span className="text-xs font-extrabold text-orange-400">
                             #{idx + 1}
                           </span>
                           {isEditing && (
-                            <span className="bg-orange-500 text-[9px] font-black text-white px-1.5 py-0.2 rounded-full uppercase tracking-wider animate-pulse">
+                            <span className="bg-orange-500 text-[9px] font-black text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse shadow">
                               Editando
                             </span>
                           )}
                         </div>
 
                         {c ? (
-                          <div key={`${idx}-${animKey}`} className="animate-pop w-full flex flex-col items-center">
+                          <div key={`${idx}-${animKey}`} className="animate-pop w-full flex flex-col items-center relative">
+                            {/* MICRO-BADGE FLOTANTE SOBRE IMAGEN CON SOMBRA 3D */}
+                            {c.badge && (
+                              <span className="absolute top-1 right-1 z-20 bg-amber-400/95 backdrop-blur-md text-slate-950 text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-lg border border-amber-200">
+                                {c.badge}
+                              </span>
+                            )}
+
                             <SafeImage
                               src={c.image}
                               alt={c.name}
                               fallbackEmoji="🌭"
-                              className="h-24 md:h-40 w-full object-cover rounded-xl shadow-md border border-orange-500/30"
+                              className="h-24 md:h-40 w-full object-cover rounded-xl shadow-lg border-t border-l border-white/20"
                             />
                             <span className="text-xs font-bold text-center mt-1.5 truncate w-full text-slate-100">
                               {c.name}
                             </span>
                           </div>
                         ) : (
-                          <div className="h-24 md:h-40 w-full border-2 border-dashed border-slate-700 rounded-xl flex flex-col items-center justify-center text-center p-1 text-slate-400">
+                          <div className="h-24 md:h-40 w-full border-2 border-dashed border-slate-700/80 rounded-xl flex flex-col items-center justify-center text-center p-1 text-slate-400">
                             <span className="text-xl md:text-3xl mb-1">🌭</span>
                             <span className="text-xs font-semibold text-slate-300">Elige Cubierto</span>
                           </div>
@@ -1027,7 +1136,7 @@
 
               <div className="w-full flex flex-wrap items-center justify-center gap-2 md:gap-3 z-20 pt-1 md:pt-2">
                 {selectedBase ? (
-                  <div className="flex items-center gap-2 bg-orange-500/20 border-2 border-orange-500/60 px-3 py-1 md:px-4 md:py-1.5 rounded-xl md:rounded-2xl shadow-xl">
+                  <div className="flex items-center gap-2 card-3d-glass border-orange-500/60 px-3 py-1 md:px-4 md:py-1.5 rounded-xl md:rounded-2xl shadow-xl">
                     <span className="text-sm md:text-base">{selectedBase.icon}</span>
                     <div className="flex flex-col text-left">
                       <span className="text-xs text-orange-400 font-extrabold uppercase tracking-wider">Orden Seleccionada</span>
@@ -1035,7 +1144,7 @@
                     </div>
                   </div>
                 ) : (
-                  <span className="text-xs text-slate-300 bg-slate-800/80 px-2.5 py-1 md:px-3 md:py-1.5 rounded-xl border border-slate-700">Sin Selección Base</span>
+                  <span className="text-xs text-slate-300 card-3d-glass px-2.5 py-1 md:px-3 md:py-1.5 rounded-xl border-slate-700">Sin Selección Base</span>
                 )}
 
                 {selectedSauces.map(sId => {
@@ -1044,22 +1153,22 @@
                   return (
                     <div
                       key={sId}
-                      className="flex items-center gap-1.5 md:gap-2 bg-slate-900 text-white border border-slate-700 px-3 py-1 md:px-4 md:py-2 rounded-xl md:rounded-2xl shadow-xl"
+                      className="flex items-center gap-1.5 md:gap-2 card-3d-glass px-3 py-1 md:px-4 md:py-2 rounded-xl md:rounded-2xl shadow-xl"
                     >
-                      <SafeImage src={sData.image} alt={sData.name} fallbackEmoji="🥫" className="w-5 h-5 md:w-6 md:h-6 rounded-full object-cover border border-slate-600" />
+                      <SafeImage src={sData.image} alt={sData.name} fallbackEmoji="🥫" className="w-5 h-5 md:w-6 md:h-6 rounded-full object-cover border border-slate-600 shadow" />
                       <span className="text-xs font-bold">{sData.name}</span>
                     </div>
                   );
                 })}
 
                 {selectedDrink && (
-                  <div className="flex items-center gap-2 bg-amber-500/20 border-2 border-amber-500/60 px-3 py-1 md:px-4 md:py-1.5 rounded-xl md:rounded-2xl shadow-2xl">
+                  <div className="flex items-center gap-2 card-3d-glass border-amber-500/60 px-3 py-1 md:px-4 md:py-1.5 rounded-xl md:rounded-2xl shadow-2xl">
                     <SafeImage
                       src={selectedDrink.image}
                       alt={selectedDrink.name}
                       fallbackEmoji="🥤"
                       defaultFallbackUrl={PLACEHOLDER_DRINK}
-                      className="w-6 h-6 md:w-8 md:h-8 rounded-lg object-cover border border-amber-400/80 shadow-md"
+                      className="w-6 h-6 md:w-8 md:h-8 rounded-lg object-cover border border-amber-400/80 shadow"
                     />
                     <div className="flex flex-col text-left">
                       <span className="text-xs text-amber-400 font-extrabold uppercase tracking-wider">Bebida (+${selectedDrink.price} MXN)</span>
@@ -1073,7 +1182,7 @@
           </div>
 
           {/* Panel Lateral */}
-          <div className="w-full md:w-1/2 p-6 md:p-10 overflow-y-auto md:max-h-screen bg-slate-950 flex flex-col justify-between">
+          <div className="w-full md:w-1/2 p-6 md:p-10 pb-28 md:pb-10 overflow-y-auto md:max-h-screen bg-slate-950 flex flex-col justify-between">
             <div>
 
               <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-800">
@@ -1082,7 +1191,7 @@
                   type="button"
                   aria-label="Reiniciar selección actual"
                   onClick={resetSelections}
-                  className="text-xs text-slate-400 hover:text-orange-400 transition font-medium flex items-center gap-1 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg"
+                  className="text-xs text-slate-400 hover:text-orange-400 transition font-medium flex items-center gap-1 card-3d-glass border border-slate-800 px-2.5 py-1 rounded-lg hover:-translate-y-0.5"
                 >
                   🔄 Reiniciar selección
                 </button>
@@ -1091,7 +1200,7 @@
               <PresetList presets={chefPresets} onApply={applyPreset} />
 
               {savedFavorites.length > 0 && (
-                <div className="mb-6 bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800">
+                <div className="mb-6 card-3d-glass p-3.5 rounded-2xl border border-white/10">
                   <h3 className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-2">Mis Combinaciones Guardadas</h3>
                   <div className="flex flex-wrap gap-2">
                     {savedFavorites.map(fav => (
@@ -1100,7 +1209,7 @@
                         type="button"
                         aria-label={`Cargar favorito ${fav.name}`}
                         onClick={() => loadFavorite(fav)}
-                        className="bg-orange-500/20 text-orange-300 border border-orange-500/40 text-xs px-3 py-1.5 rounded-xl hover:bg-orange-500/30 transition-all transform active:scale-95 font-semibold"
+                        className="bg-orange-500/20 text-orange-300 border border-orange-500/40 text-xs px-3 py-1.5 rounded-xl hover:bg-orange-500/30 transition-all transform active:scale-95 font-semibold shadow-sm hover:-translate-y-0.5"
                       >
                         ★ {fav.name}
                       </button>
@@ -1126,15 +1235,15 @@
                         type="button"
                         aria-label={`Seleccionar base ${b.name}`}
                         onClick={() => handleBaseChange(b)}
-                        className={`p-3.5 rounded-xl border text-left flex justify-between items-center transition-all transform hover:scale-[1.01] active:scale-95 ${isSelected
-                          ? 'border-orange-500 bg-orange-500/20 text-white shadow-lg font-semibold ring-1 ring-orange-500/30'
-                          : 'border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700'
+                        className={`p-3.5 rounded-xl border text-left flex justify-between items-center transition-all transform active:scale-95 card-3d-glass ${isSelected
+                          ? 'border-orange-500 bg-orange-500/20 text-white shadow-xl shadow-orange-500/10 font-semibold ring-1 ring-orange-500/40 -translate-y-0.5'
+                          : 'hover:border-slate-700 hover:-translate-y-0.5'
                           }`}
                       >
                         <div className="flex items-center gap-2">
                           <span>{b.icon}</span>
                           <span className="font-medium text-sm">{b.name}</span>
-                          {b.badge && <span className="bg-orange-500/30 text-orange-300 text-[11px] font-bold px-2 py-0.5 rounded-full border border-orange-500/40">{b.badge}</span>}
+                          {b.badge && <span className="bg-orange-500/30 text-orange-300 text-[11px] font-bold px-2 py-0.5 rounded-full border border-orange-500/40 shadow-sm">{b.badge}</span>}
                         </div>
                         <span className="font-extrabold text-orange-400 text-sm">${b.price} MXN</span>
                       </button>
@@ -1170,16 +1279,16 @@
                         type="button"
                         aria-label={`Seleccionar salsa ${s.name}`}
                         onClick={() => toggleSauce(s.id)}
-                        className={`p-2 rounded-xl border flex items-center gap-2.5 transition-all transform hover:scale-[1.02] active:scale-95 ${active
-                          ? 'border-orange-500 bg-orange-500/30 text-white font-bold shadow ring-1 ring-orange-500/30'
-                          : 'border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700'
+                        className={`p-2 rounded-xl border flex items-center gap-2.5 transition-all transform active:scale-95 card-3d-glass ${active
+                          ? 'border-orange-500 bg-orange-500/30 text-white font-bold shadow-lg ring-1 ring-orange-500/40 -translate-y-0.5'
+                          : 'hover:border-slate-700 hover:-translate-y-0.5'
                           }`}
                       >
                         <SafeImage
                           src={s.image}
                           alt={s.name}
                           fallbackEmoji="🥫"
-                          className="w-8 h-8 rounded-lg object-cover border border-slate-700 flex-shrink-0"
+                          className="w-8 h-8 rounded-lg object-cover border border-slate-700 flex-shrink-0 shadow"
                         />
                         <span className="text-xs font-medium truncate">{active ? '✓ ' : ''}{s.name}</span>
                       </button>
@@ -1188,13 +1297,13 @@
                 </div>
               </div>
 
-              {/* Opción 4: Bebida */}
+              {/* Opción 4: Bebida (Con Carrusel Deslizable) */}
               <div className="mb-6">
                 <h3 className="text-sm font-bold text-orange-400 mb-2.5 flex items-center gap-1.5">
                   <span className="w-5 h-5 bg-orange-500/20 text-orange-400 rounded-full flex items-center justify-center text-xs border border-orange-500/40">4</span>
                   Bebida Opcional
                 </h3>
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="flex overflow-x-auto gap-2.5 pb-2 pt-1 no-scrollbar snap-x snap-mandatory">
                   {drinks.map(d => {
                     const isSelected = selectedDrink?.id === d.id;
                     return (
@@ -1206,9 +1315,9 @@
                           playSound('click');
                           dispatch({ type: 'SET_DRINK', payload: isSelected ? null : d });
                         }}
-                        className={`p-2.5 rounded-xl border text-left text-xs flex items-center gap-3 transition-all transform hover:scale-[1.02] active:scale-95 ${isSelected
-                          ? 'border-orange-500 bg-orange-500/20 text-white shadow-lg font-semibold ring-1 ring-orange-500/30'
-                          : 'border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700'
+                        className={`p-2.5 rounded-xl border text-left text-xs flex items-center gap-3 transition-all transform active:scale-95 flex-shrink-0 w-52 snap-start card-3d-glass ${isSelected
+                          ? 'border-orange-500 bg-orange-500/20 text-white shadow-xl font-semibold ring-1 ring-orange-500/40 -translate-y-0.5'
+                          : 'hover:border-slate-700 hover:-translate-y-0.5'
                           }`}
                       >
                         <SafeImage
@@ -1216,7 +1325,7 @@
                           alt={d.name}
                           fallbackEmoji="🥤"
                           defaultFallbackUrl={PLACEHOLDER_DRINK}
-                          className="w-12 h-12 object-cover rounded-lg border border-slate-700 flex-shrink-0"
+                          className="w-10 h-10 object-cover rounded-lg border border-slate-700 flex-shrink-0 shadow"
                         />
                         <div className="flex flex-col justify-between flex-1 min-w-0">
                           <span className="font-semibold text-slate-200 truncate">{d.name}</span>
@@ -1234,33 +1343,34 @@
                   placeholder="Guarda esta orden (ej. Mi Orden Especial)..."
                   value={favoriteName}
                   onChange={(e) => setFavoriteName(e.target.value)}
-                  className="bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs flex-1 text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 transition"
+                  className="bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs flex-1 text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 transition shadow-inner"
                 />
                 <button
                   type="button"
                   aria-label="Guardar orden como favorita"
                   onClick={saveFavorite}
-                  className="bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-semibold px-4 py-2 rounded-xl transition-all transform border border-slate-700 text-slate-200"
+                  className="bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-semibold px-4 py-2 rounded-xl transition-all transform border border-slate-700 text-slate-200 shadow-md hover:-translate-y-0.5"
                 >
                   ★ Guardar
                 </button>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-4">
+            {/* STICKY BOTTOM BAR (Barra flotante fija en la parte inferior para móviles con relieve 3D) */}
+            <div className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto bg-slate-950/90 backdrop-blur-xl md:bg-transparent p-4 md:p-0 md:pt-4 border-t border-white/10 flex items-center justify-between gap-4 z-40 shadow-2xl md:shadow-none">
               <div>
-                <span className="text-3xl font-black text-orange-400">${currentPrice} MXN</span>
-                <span className="text-xs text-slate-300 block">Incluye 3 Banderillas + Cubiertos</span>
+                <span className="text-2xl md:text-3xl font-black text-orange-400 drop-shadow">${currentPrice} MXN</span>
+                <span className="text-[10px] md:text-xs text-slate-300 block">Incluye 3 Banderillas + Cubiertos</span>
               </div>
               <button
                 type="button"
                 aria-label="Agregar orden completa al carrito"
                 onClick={addToCart}
                 disabled={!isOpen || !selectedBase || selectedCoatings.some(c => c === null)}
-                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-xl hover:shadow-orange-500/20 transition-all transform active:scale-95 flex items-center gap-2 text-xs md:text-sm"
+                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold py-3 md:py-3.5 px-5 md:px-6 rounded-2xl shadow-xl shadow-orange-500/20 transition-all transform active:scale-95 flex items-center gap-2 text-xs md:text-sm border-t border-white/30"
               >
                 <span>{!selectedBase || selectedCoatings.some(c => c === null) ? 'Elige 3 Cubiertos' : 'Agregar Orden al Carrito'}</span>
-                <span className="bg-white/20 px-2 py-0.5 rounded-lg text-xs">🛒</span>
+                <span className="bg-white/20 px-2 py-0.5 rounded-lg text-xs shadow-inner">🛒</span>
               </button>
             </div>
           </div>
