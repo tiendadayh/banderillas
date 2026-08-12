@@ -19,7 +19,7 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-200 font-sans h-screen overflow-hidden flex flex-col">
+<body class="bg-slate-950 text-slate-200 font-sans h-[100dvh] overflow-hidden flex flex-col">
   <div id="root" class="h-full"></div>
 
   <script type="module">
@@ -85,9 +85,9 @@
       };
 
       return (
-        <div className="h-full w-full flex items-center justify-center bg-slate-950">
-          <form onSubmit={handleLogin} className="glass-panel p-8 rounded-2xl w-full max-w-sm space-y-4 shadow-2xl">
-            <h1 className="text-xl font-black text-orange-500 text-center tracking-wide">🔥 BANDERILLAS COREANAS <span className="text-white block text-sm font-bold mt-1">Acceso Admin</span></h1>
+        <div className="h-full w-full flex items-center justify-center bg-slate-950 p-4">
+          <form onSubmit={handleLogin} className="glass-panel p-6 sm:p-8 rounded-2xl w-full max-w-sm space-y-4 shadow-2xl">
+            <h1 className="text-lg sm:text-xl font-black text-orange-500 text-center tracking-wide">🔥 BANDERILLAS COREANAS <span className="text-white block text-sm font-bold mt-1">Acceso Admin</span></h1>
             <div>
               <label className="text-xs font-bold text-slate-300 block mb-1">Correo</label>
               <input
@@ -147,9 +147,75 @@
     function App() {
       const [orders, setOrders] = useState([]);
       const [historyOrders, setHistoryOrders] = useState([]);
-      const [soundEnabled, setSoundEnabled] = useState(false);
+      const [soundEnabled, setSoundEnabled] = useState(() => {
+        const saved = localStorage.getItem('banderillas_sound_enabled');
+        return saved === null ? true : saved === 'true';
+      });
       const [showReports, setShowReports] = useState(false);
       const prevOrderCount = useRef(0);
+      const soundEnabledRef = useRef(soundEnabled);
+      const audioCtxRef = useRef(null);
+      const firstOrdersLoad = useRef(true);
+      const [hasNewOrder, setHasNewOrder] = useState(false);
+      const originalTitleRef = useRef(document.title);
+
+      useEffect(() => {
+        soundEnabledRef.current = soundEnabled;
+        localStorage.setItem('banderillas_sound_enabled', soundEnabled);
+      }, [soundEnabled]);
+
+      const getAudioCtx = () => {
+        if (!audioCtxRef.current) {
+          audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        return audioCtxRef.current;
+      };
+
+      // Desbloquea el audio con el primer toque/clic en la pantalla: los navegadores
+      // no dejan sonar nada si nunca hubo una interacción del usuario en la página.
+      useEffect(() => {
+        const unlockAudio = () => {
+          const ctx = getAudioCtx();
+          if (ctx.state === 'suspended') ctx.resume();
+        };
+        document.addEventListener('click', unlockAudio);
+        document.addEventListener('touchstart', unlockAudio);
+        return () => {
+          document.removeEventListener('click', unlockAudio);
+          document.removeEventListener('touchstart', unlockAudio);
+        };
+      }, []);
+
+      // Reactiva el audio al volver a esta pestaña: algunos navegadores (sobre todo
+      // en celular) lo suspenden solos cuando la pantalla se apaga o se minimiza.
+      useEffect(() => {
+        const onVisible = () => {
+          if (document.visibilityState === 'visible' && audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+            audioCtxRef.current.resume();
+          }
+        };
+        document.addEventListener('visibilitychange', onVisible);
+        return () => document.removeEventListener('visibilitychange', onVisible);
+      }, []);
+
+      // Hace parpadear el título de la pestaña del navegador mientras haya un
+      // pedido nuevo sin revisar, como respaldo visual si el sonido no se oye.
+      useEffect(() => {
+        if (!hasNewOrder) {
+          document.title = originalTitleRef.current;
+          return;
+        }
+        let flashOn = false;
+        document.title = '🔔 ¡Nuevo pedido!';
+        const flashInterval = setInterval(() => {
+          flashOn = !flashOn;
+          document.title = flashOn ? originalTitleRef.current : '🔔 ¡Nuevo pedido!';
+        }, 1000);
+        return () => {
+          clearInterval(flashInterval);
+          document.title = originalTitleRef.current;
+        };
+      }, [hasNewOrder]);
 
       useEffect(() => {
         const checkFirebase = setInterval(() => {
@@ -166,14 +232,17 @@
                   ...data[key]
                 }));
 
-                if (loadedOrders.length > prevOrderCount.current && soundEnabled) {
-                  playNotification();
+                if (loadedOrders.length > prevOrderCount.current && !firstOrdersLoad.current) {
+                  if (soundEnabledRef.current) playNotification();
+                  setHasNewOrder(true);
                 }
+                firstOrdersLoad.current = false;
                 prevOrderCount.current = loadedOrders.length;
                 setOrders(loadedOrders);
               } else {
                 setOrders([]);
                 prevOrderCount.current = 0;
+                firstOrdersLoad.current = false;
               }
             });
 
@@ -189,22 +258,31 @@
         }, 300);
 
         return () => clearInterval(checkFirebase);
-      }, [soundEnabled]);
+      }, []);
 
       const playNotification = () => {
         try {
-          const ctx = new (window.AudioContext || window.webkitAudioContext)();
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(880, ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.3);
-          gain.gain.setValueAtTime(0.2, ctx.currentTime);
-          gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-          osc.start();
-          osc.stop(ctx.currentTime + 0.3);
+          const ctx = getAudioCtx();
+          const fire = () => {
+            [0, 0.4].forEach((delay) => {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(880, ctx.currentTime + delay);
+              osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + delay + 0.3);
+              gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+              gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + delay + 0.3);
+              osc.start(ctx.currentTime + delay);
+              osc.stop(ctx.currentTime + delay + 0.3);
+            });
+          };
+          if (ctx.state === 'suspended') {
+            ctx.resume().then(fire);
+          } else {
+            fire();
+          }
         } catch (e) {}
       };
 
@@ -245,6 +323,7 @@
           window.update(orderRef, { status: newStatus });
           sendWhatsAppStatusUpdate(order, newStatus);
         }
+        setHasNewOrder(false);
       };
 
       const deleteOrder = (firebaseKey) => {
@@ -270,6 +349,22 @@
             }
           });
           window.update(window.ref(window.db), updates);
+        }
+      };
+
+      const resetReport = () => {
+        if (window.confirm('¿Reiniciar el reporte de ventas? Esto borrará permanentemente todo el historial archivado (pedidos_historial) que alimenta los totales de Hoy/Semana/Mes y el ranking de más pedidos. No borra los pedidos activos del tablero. Esta acción no se puede deshacer.')) {
+          if (window.db && window.ref && window.remove) {
+            window.remove(window.ref(window.db, 'pedidos_historial'));
+          }
+        }
+      };
+
+      const resetOrderCounter = () => {
+        if (window.confirm('¿Reiniciar la numeración de pedidos? El próximo pedido que se cree empezará en #1 de nuevo. Esto no borra ni modifica los pedidos ya existentes, solo el contador para los pedidos nuevos.')) {
+          if (window.db && window.ref && window.update) {
+            window.update(window.ref(window.db), { 'contador/pedidos': 0 });
+          }
         }
       };
 
@@ -316,34 +411,42 @@
 
       return (
         <div className="h-full flex flex-col">
-          <header className="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center shrink-0">
-            <div className="flex items-center gap-4">
-              <h1 className="text-xl font-black text-orange-500 tracking-wider">🔥 BANDERILLAS COREANAS <span className="text-white">ADMIN</span></h1>
+          {hasNewOrder && (
+            <div
+              onClick={() => setHasNewOrder(false)}
+              className="bg-red-600 text-white text-center text-xs sm:text-sm font-bold py-2 px-3 cursor-pointer shrink-0 animate-pulse"
+            >
+              🔔 ¡Tienes un pedido nuevo! Toca aquí para quitar el aviso
+            </div>
+          )}
+          <header className="bg-slate-900 border-b border-slate-800 p-3 md:p-4 flex flex-col md:flex-row md:justify-between md:items-center gap-2.5 shrink-0">
+            <div className="flex items-center justify-between md:justify-start gap-3 flex-wrap">
+              <h1 className="text-sm sm:text-base md:text-xl font-black text-orange-500 tracking-wider leading-tight">🔥 BANDERILLAS <span className="hidden sm:inline">COREANAS </span><span className="text-white">ADMIN</span></h1>
               <button 
                 onClick={() => { setSoundEnabled(!soundEnabled); if(!soundEnabled) playNotification(); }}
-                className={`text-xs px-3 py-1 rounded-full border ${soundEnabled ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-slate-600 text-slate-400'}`}
+                className={`text-[10px] sm:text-xs px-2.5 sm:px-3 py-1 rounded-full border whitespace-nowrap ${soundEnabled ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-slate-600 text-slate-400'}`}
               >
-                {soundEnabled ? '🔊 Sonido Activado' : '🔇 Activar Sonido'}
+                {soundEnabled ? '🔊 Sonido' : '🔇 Sonido'}
               </button>
             </div>
-            <div className="flex gap-4 items-center">
-              <div className="text-right">
-                <span className="text-xs text-slate-400 block uppercase">Nuevos Hoy</span>
-                <span className="text-lg font-bold text-yellow-400">{pendingCount} pedidos</span>
+            <div className="flex flex-wrap items-center justify-between md:justify-end gap-2.5 md:gap-4">
+              <div className="text-left md:text-right">
+                <span className="text-[10px] text-slate-400 block uppercase">Nuevos Hoy</span>
+                <span className="text-sm sm:text-base md:text-lg font-bold text-yellow-400">{pendingCount} pedidos</span>
               </div>
-              <div className="text-right border-l border-slate-700 pl-4">
-                <span className="text-xs text-slate-400 block uppercase">Ventas (Completadas)</span>
-                <span className="text-lg font-bold text-emerald-400">${totalSales} MXN</span>
+              <div className="text-left md:text-right md:border-l border-slate-700 md:pl-4">
+                <span className="text-[10px] text-slate-400 block uppercase">Ventas</span>
+                <span className="text-sm sm:text-base md:text-lg font-bold text-emerald-400">${totalSales} MXN</span>
               </div>
               <button
                 onClick={() => setShowReports(true)}
-                className="text-xs px-3 py-1.5 rounded-full border border-slate-600 text-slate-300 hover:border-orange-500 hover:text-orange-400 transition"
+                className="text-[10px] sm:text-xs px-2.5 sm:px-3 py-1.5 rounded-full border border-slate-600 text-slate-300 hover:border-orange-500 hover:text-orange-400 transition whitespace-nowrap"
               >
                 📊 Reportes
               </button>
               <button
                 onClick={() => window.signOut(window.auth)}
-                className="text-xs px-3 py-1.5 rounded-full border border-slate-600 text-slate-400 hover:border-red-500 hover:text-red-400 transition"
+                className="text-[10px] sm:text-xs px-2.5 sm:px-3 py-1.5 rounded-full border border-slate-600 text-slate-400 hover:border-red-500 hover:text-red-400 transition whitespace-nowrap"
               >
                 🚪 Salir
               </button>
@@ -351,14 +454,19 @@
           </header>
 
           {showReports && (
-            <ReportsModal report={salesReport} onClose={() => setShowReports(false)} />
+            <ReportsModal
+              report={salesReport}
+              onClose={() => setShowReports(false)}
+              onResetReport={resetReport}
+              onResetCounter={resetOrderCounter}
+            />
           )}
 
-          <div className="flex-1 overflow-x-auto p-4 flex gap-4 no-scrollbar items-stretch">
+          <div className="flex-1 overflow-x-auto p-3 md:p-4 flex gap-3 md:gap-4 no-scrollbar items-stretch snap-x snap-mandatory">
             {COLUMNS.map(col => {
               const colOrders = orders.filter(o => o.status === col.id).sort((a, b) => b.id - a.id);
               return (
-                <div key={col.id} className={`w-80 flex-shrink-0 flex flex-col rounded-2xl border ${col.borderColor} ${col.bgColor} overflow-hidden`}>
+                <div key={col.id} className={`w-[88vw] max-w-[320px] sm:w-80 flex-shrink-0 flex flex-col rounded-2xl border ${col.borderColor} ${col.bgColor} overflow-hidden snap-center`}>
                   <div className="p-3 border-b border-white/10 bg-black/20 flex justify-between items-center">
                     <h2 className="font-bold text-sm">{col.title}</h2>
                     <span className="bg-slate-800 text-xs px-2 py-0.5 rounded-full">{colOrders.length}</span>
@@ -370,7 +478,7 @@
                     ) : (
                       colOrders.map(order => (
                         <div key={order.firebaseKey || order.id} className="glass-panel p-3 rounded-xl shadow-lg relative group">
-                          <button onClick={() => deleteOrder(order.firebaseKey)} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                          <button onClick={() => deleteOrder(order.firebaseKey)} className="absolute top-2 right-2 text-red-500 opacity-60 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-sm p-1">✕</button>
                           
                           <div className="flex justify-between items-start mb-2 border-b border-white/10 pb-2">
                             <div>
@@ -461,27 +569,27 @@
         </div>
       );
     }
-    function ReportsModal({ report, onClose }) {
+    function ReportsModal({ report, onClose, onResetReport, onResetCounter }) {
       return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={onClose}>
-          <div className="glass-panel w-full max-w-lg rounded-2xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto no-scrollbar" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-3 sm:p-4" onClick={onClose}>
+          <div className="glass-panel w-full max-w-lg rounded-2xl p-4 sm:p-5 shadow-2xl max-h-[85vh] overflow-y-auto no-scrollbar" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
-              <h2 className="text-lg font-black text-orange-400">📊 Reportes de Ventas</h2>
+              <h2 className="text-base sm:text-lg font-black text-orange-400">📊 Reportes de Ventas</h2>
               <button onClick={onClose} className="text-slate-400 hover:text-white text-xl font-bold">✕</button>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 mb-5">
-              <div className="bg-slate-900/70 rounded-xl p-3 text-center border border-slate-700">
-                <span className="text-[10px] uppercase text-slate-400 block">Hoy</span>
-                <span className="text-lg font-black text-emerald-400">${report.hoy}</span>
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-5">
+              <div className="bg-slate-900/70 rounded-xl p-2 sm:p-3 text-center border border-slate-700">
+                <span className="text-[9px] sm:text-[10px] uppercase text-slate-400 block">Hoy</span>
+                <span className="text-sm sm:text-lg font-black text-emerald-400 break-words">${report.hoy}</span>
               </div>
-              <div className="bg-slate-900/70 rounded-xl p-3 text-center border border-slate-700">
-                <span className="text-[10px] uppercase text-slate-400 block">Esta Semana</span>
-                <span className="text-lg font-black text-emerald-400">${report.semana}</span>
+              <div className="bg-slate-900/70 rounded-xl p-2 sm:p-3 text-center border border-slate-700">
+                <span className="text-[9px] sm:text-[10px] uppercase text-slate-400 block">Semana</span>
+                <span className="text-sm sm:text-lg font-black text-emerald-400 break-words">${report.semana}</span>
               </div>
-              <div className="bg-slate-900/70 rounded-xl p-3 text-center border border-slate-700">
-                <span className="text-[10px] uppercase text-slate-400 block">Este Mes</span>
-                <span className="text-lg font-black text-emerald-400">${report.mes}</span>
+              <div className="bg-slate-900/70 rounded-xl p-2 sm:p-3 text-center border border-slate-700">
+                <span className="text-[9px] sm:text-[10px] uppercase text-slate-400 block">Mes</span>
+                <span className="text-sm sm:text-lg font-black text-emerald-400 break-words">${report.mes}</span>
               </div>
             </div>
 
@@ -503,7 +611,7 @@
               )}
             </div>
 
-            <div>
+            <div className="mb-5">
               <h3 className="text-sm font-bold text-orange-400 mb-2">🧀 Empanizados favoritos</h3>
               {report.topCoatings.length === 0 ? (
                 <p className="text-xs text-slate-500">Aún no hay suficientes datos.</p>
@@ -517,6 +625,25 @@
                   ))}
                 </div>
               )}
+            </div>
+
+            <div className="border-t border-white/10 pt-3 space-y-2">
+              <h3 className="text-xs font-bold text-red-400 uppercase tracking-wide mb-1">⚠️ Zona de reinicio</h3>
+              <button
+                onClick={onResetReport}
+                className="w-full text-xs font-semibold text-slate-300 hover:text-white bg-slate-900/70 hover:bg-red-950/40 border border-slate-700 hover:border-red-500/50 py-2 rounded-lg transition"
+              >
+                🔄 Reiniciar Reporte de Ventas
+              </button>
+              <button
+                onClick={onResetCounter}
+                className="w-full text-xs font-semibold text-slate-300 hover:text-white bg-slate-900/70 hover:bg-red-950/40 border border-slate-700 hover:border-red-500/50 py-2 rounded-lg transition"
+              >
+                🔢 Reiniciar Numeración de Pedidos (próximo = #1)
+              </button>
+              <p className="text-[10px] text-slate-500 leading-relaxed">
+                Reiniciar el reporte borra el historial archivado usado para estas estadísticas. Reiniciar la numeración solo afecta a los próximos pedidos nuevos.
+              </p>
             </div>
           </div>
         </div>
