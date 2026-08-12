@@ -34,19 +34,15 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
-    /* Configuración de escena 3D global */
     body {
       perspective: 1200px;
     }
 
     @keyframes pulseGlow {
-
-      0%,
-      100% {
+      0%, 100% {
         opacity: 0.3;
         transform: scale(1);
       }
-
       50% {
         opacity: 0.6;
         transform: scale(1.03);
@@ -57,15 +53,11 @@
       animation: pulseGlow 4s infinite ease-in-out;
     }
 
-    /* 1. GLOW DINÁMICO EN EL BADGE PRINCIPAL CON SOMBRAS 3D */
     @keyframes neonGlow {
-
-      0%,
-      100% {
+      0%, 100% {
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 85, 0, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.4);
         border-color: #ff5500;
       }
-
       50% {
         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), 0 0 28px rgba(255, 106, 0, 0.85), inset 0 1px 3px rgba(255, 255, 255, 0.6);
         border-color: #ff7700;
@@ -77,7 +69,6 @@
         transform: scale(0.9) translateY(20px);
         opacity: 0;
       }
-
       100% {
         transform: scale(1) translateY(0);
         opacity: 1;
@@ -88,7 +79,6 @@
       animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    /* Estilos del Badge Neón Animado 3D */
     .badge-header {
       display: inline-flex;
       align-items: center;
@@ -125,7 +115,6 @@
       text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 10px rgba(255, 85, 0, 0.6);
     }
 
-    /* TARJETAS CON EFECTO VOLUMÉTRICO Y GLASSMORPHISM 3D */
     .card-3d-glass {
       background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
       backdrop-filter: blur(16px);
@@ -149,46 +138,25 @@
       box-shadow: -10px 20px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(249, 115, 22, 0.2);
     }
 
-    /* Ocultar scrollbars manteniendo scroll */
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
     @media (min-width: 768px) {
-      .badge-header {
-        padding: 12px 36px;
-      }
-
-      .badge-header .title {
-        font-size: 1.6rem;
-      }
-
-      .badge-header .badge-icon {
-        font-size: 1.8rem;
-      }
+      .badge-header { padding: 12px 36px; }
+      .badge-header .title { font-size: 1.6rem; }
+      .badge-header .badge-icon { font-size: 1.8rem; }
     }
   </style>
 </head>
 
-<body
-  class="bg-slate-950 text-slate-100 font-sans selection:bg-orange-500 selection:text-white transition-colors duration-300 overflow-x-hidden">
+<body class="bg-slate-950 text-slate-100 font-sans selection:bg-orange-500 selection:text-white transition-colors duration-300 overflow-x-hidden">
 
   <!-- PORTADA / HERO SECTION -->
-  <header
-    class="relative overflow-hidden bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 border-b border-slate-800/80 py-12 md:py-20 px-6 md:px-12">
-    <div
-      class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-3xl pointer-events-none glow-effect">
-    </div>
+  <header class="relative overflow-hidden bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 border-b border-slate-800/80 py-12 md:py-20 px-6 md:px-12">
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-3xl pointer-events-none glow-effect"></div>
 
     <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 items-center relative z-10">
       <div class="space-y-6 text-center md:text-left">
-
-        <!-- BADGE NEÓN ANIMADO -->
         <div class="flex justify-center md:justify-start">
           <div class="badge-header">
             <span class="badge-icon">🌭</span>
@@ -198,26 +166,22 @@
         </div>
 
         <h1 class="text-4xl md:text-6xl font-black text-white leading-tight drop-shadow-lg">
-          El Sabor Perfecto en <span
-            class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-400">Cada Bocado</span>
+          El Sabor Perfecto en <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-400">Cada Bocado</span>
         </h1>
 
         <p class="text-slate-300 text-sm md:text-base leading-relaxed max-w-lg mx-auto md:mx-0">
           ¡Elige tu combinación favorita y personaliza el empanizado de cada una de tus 3 banderillas!
         </p>
 
-        <!-- Glassmorphism 3D card -->
         <div class="card-3d-glass rounded-2xl p-4 max-w-lg">
-          <p
-            class="text-xs md:text-sm font-extrabold text-amber-300 flex items-center justify-center md:justify-start gap-2">
+          <p class="text-xs md:text-sm font-extrabold text-amber-300 flex items-center justify-center md:justify-start gap-2">
             <span>📌</span>
             <span>TODAS LAS ÓRDENES INCLUYEN 3 BANDERILLAS PERSONALIZABLES</span>
           </p>
         </div>
 
         <div class="flex flex-wrap justify-center md:justify-start gap-4 pt-2">
-          <a href="#creador"
-            class="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 active:scale-95 text-white font-extrabold px-6 py-3.5 rounded-2xl shadow-xl shadow-orange-500/30 transition-all transform hover:-translate-y-1 text-sm flex items-center gap-2 border-t border-white/30">
+          <a href="#creador" class="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 active:scale-95 text-white font-extrabold px-6 py-3.5 rounded-2xl shadow-xl shadow-orange-500/30 transition-all transform hover:-translate-y-1 text-sm flex items-center gap-2 border-t border-white/30">
             <span>Armar mi Orden</span>
             <span>🌭</span>
           </a>
@@ -225,19 +189,13 @@
       </div>
 
       <div class="relative flex justify-center" style="perspective: 1000px;">
-        <div
-          class="absolute -top-3 -right-3 z-20 bg-amber-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-full shadow-2xl border border-amber-200 transform rotate-6 hover:scale-110 transition-transform">
+        <div class="absolute -top-3 -right-3 z-20 bg-amber-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-full shadow-2xl border border-amber-200 transform rotate-6 hover:scale-110 transition-transform">
           ⭐ ¡3 Banderillas x Orden!
         </div>
 
         <div class="relative group w-full max-w-md card-3d-interactive">
-          <div
-            class="absolute -inset-1 bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl blur opacity-30 group-hover:opacity-70 transition duration-500">
-          </div>
-
-          <img src="portada.jpg" alt="Portada Banderillas Coreanas"
-            class="relative rounded-3xl border-t border-l border-white/20 object-cover w-full h-72 md:h-96 shadow-2xl"
-            onerror="this.src='https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&w=800&q=80'" />
+          <div class="absolute -inset-1 bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl blur opacity-30 group-hover:opacity-70 transition duration-500"></div>
+          <img src="portada.jpg" alt="Portada Banderillas Coreanas" class="relative rounded-3xl border-t border-l border-white/20 object-cover w-full h-72 md:h-96 shadow-2xl" onError="this.src='https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&w=800&q=80'" />
         </div>
       </div>
     </div>
@@ -248,12 +206,35 @@
     <div id="root"></div>
   </div>
 
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, push, update, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAuL5YKxucoHUKCkoz5j6m9KU1XjTP0Z2o",
+      authDomain: "banderillascoreanas-f9e60.firebaseapp.com",
+      databaseURL: "https://banderillascoreanas-f9e60-default-rtdb.firebaseio.com",
+      projectId: "banderillascoreanas-f9e60",
+      storageBucket: "banderillascoreanas-f9e60.firebasestorage.app",
+      messagingSenderId: "30789485951",
+      appId: "1:30789485951:web:bb31aec060f17ad6ea864a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    window.db = db;
+    window.push = push;
+    window.update = update;
+    window.runTransaction = runTransaction;
+    window.ref = ref;
+  </script>
+
   <script type="text/babel">
     const { useState, useEffect, useReducer } = React;
 
     const PHONE_NUMBER = "527442411773";
     const OPEN_HOUR = 13;
-    const CLOSE_HOUR = 1;
+    const CLOSE_HOUR = 24;
 
     const PLACEHOLDER_FOOD = "https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&w=400&q=80";
     const PLACEHOLDER_DRINK = "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&q=80";
@@ -324,10 +305,34 @@
     ];
 
     const chefPresets = [
-      { name: '🔥 Orden Flamin Fuego', baseId: 'mixta', coatingIds: ['flamin', 'flamin', 'flamin'], sauces: ['ketchup', 'queso_amarillo'], drinkId: 'agua' },
-      { name: '🧀 Orden Suprema Queso', baseId: 'queso', coatingIds: ['cheetos', 'cheetos', 'cheetos'], sauces: ['queso_amarillo', 'ketchup'], drinkId: 'boba' },
-      { name: '🔵 Orden Variada Crunch', baseId: 'mixta', coatingIds: ['takis', 'panko', 'flamin'], sauces: ['ketchup', 'chile_vinagre'], drinkId: 'soda' },
-      { name: '🌭 Orden Clásica Panko', baseId: 'clasica', coatingIds: ['panko', 'panko', 'panko'], sauces: ['ketchup', 'chile_vinagre'], drinkId: 'soda' }
+      { 
+        name: '🔥 Orden Flamin Fuego', 
+        baseId: 'mixta', 
+        coatingIds: ['flamin', 'flamin', 'flamin'], 
+        sauces: [availableSauces[0], availableSauces[1]], 
+        drinkId: 'agua' 
+      },
+      { 
+        name: '🧀 Orden Suprema Queso', 
+        baseId: 'queso', 
+        coatingIds: ['cheetos', 'cheetos', 'cheetos'], 
+        sauces: [availableSauces[1], availableSauces[0]], 
+        drinkId: 'boba' 
+      },
+      { 
+        name: '🔵 Orden Variada Crunch', 
+        baseId: 'mixta', 
+        coatingIds: ['takis', 'panko', 'flamin'], 
+        sauces: [availableSauces[0], availableSauces[2]], 
+        drinkId: 'soda' 
+      },
+      { 
+        name: '🌭 Orden Clásica Panko', 
+        baseId: 'clasica', 
+        coatingIds: ['panko', 'panko', 'panko'], 
+        sauces: [availableSauces[0], availableSauces[2]], 
+        drinkId: 'soda' 
+      }
     ];
 
     function SafeImage({ src, alt, className, fallbackEmoji = "🌭", defaultFallbackUrl = PLACEHOLDER_FOOD }) {
@@ -367,7 +372,6 @@
             Elige el Cubierto para cada Banderilla
           </h3>
 
-          {/* Slots de Banderillas con Elevación 3D */}
           <div className="grid grid-cols-3 gap-2 mb-3">
             {[0, 1, 2].map((slotIdx) => {
               const isCurrentSlot = activeSlot === slotIdx;
@@ -394,7 +398,6 @@
             })}
           </div>
 
-          {/* Carrusel Deslizable Horizontal (Swipeable) */}
           <div className="flex overflow-x-auto gap-2.5 pb-2 pt-1 no-scrollbar snap-x snap-mandatory">
             {coatings.map(c => {
               const isSelectedInCurrentSlot = selectedCoatings[activeSlot]?.id === c.id;
@@ -536,16 +539,13 @@
                       <div className="bg-slate-900/60 p-2.5 rounded-xl border border-white/10 space-y-1.5">
                         <span className="text-xs text-slate-300 font-extrabold uppercase tracking-wider block">Salsas y Extras:</span>
                         <div className="flex flex-wrap gap-2">
-                          {item.sauces !== 'Sin salsas ni extras' ? (
-                            item.sauces.split(', ').map((sauceName, sIdx) => {
-                              const sauceObj = availableSauces.find(s => s.name === sauceName);
-                              return (
-                                <div key={sIdx} className="flex items-center gap-1.5 bg-slate-800/90 px-2 py-1 rounded-lg border border-slate-700 shadow-sm">
-                                  <SafeImage src={sauceObj?.image} alt={sauceName} fallbackEmoji="🥫" className="w-4 h-4 rounded-full object-cover" />
-                                  <span className="text-xs text-slate-200 font-medium">{sauceName}</span>
-                                </div>
-                              );
-                            })
+                          {item.sauces && item.sauces.length > 0 ? (
+                            item.sauces.map((sauce, sIdx) => (
+                              <div key={sauce.id || sIdx} className="flex items-center gap-1.5 bg-slate-800/90 px-2 py-1 rounded-lg border border-slate-700 shadow-sm">
+                                <SafeImage src={sauce.image} alt={sauce.name} fallbackEmoji="🥫" className="w-4 h-4 rounded-full object-cover" />
+                                <span className="text-xs text-slate-200 font-medium">{sauce.name}</span>
+                              </div>
+                            ))
                           ) : (
                             <span className="text-xs text-slate-400 italic">Sin salsas seleccionadas</span>
                           )}
@@ -685,9 +685,7 @@
                 )}
                 <div className="flex justify-between font-black text-lg text-white pt-1.5 border-t border-white/10">
                   <span>Total Final:</span>
-                  <span className="text-orange-400">
-                    ${totalCartPrice} MXN
-                  </span>
+                  <span className="text-orange-400">${totalCartPrice} MXN</span>
                 </div>
               </div>
 
@@ -739,24 +737,24 @@
           return { ...state, selectedCoatings: updatedCoatings, activeCoatingSlot: nextSlot };
         }
         case 'TOGGLE_SAUCE': {
-          const sauceId = action.payload;
-          const exists = state.selectedSauces.includes(sauceId);
+          const sauceObj = action.payload;
+          const exists = state.selectedSauces.some(s => s.id === sauceObj.id);
           if (exists) {
-            return { ...state, selectedSauces: state.selectedSauces.filter(s => s !== sauceId) };
+            return { ...state, selectedSauces: state.selectedSauces.filter(s => s.id !== sauceObj.id) };
           } else {
             if (state.selectedSauces.length >= 6) return state;
-            return { ...state, selectedSauces: [...state.selectedSauces, sauceId] };
+            return { ...state, selectedSauces: [...state.selectedSauces, sauceObj] };
           }
         }
         case 'SET_DRINK':
           return { ...state, selectedDrink: action.payload };
         case 'APPLY_PRESET': {
-          const { preset, basesList, coatingsList, drinksList } = action.payload;
+          const { preset, basesList, drinksList } = action.payload;
           return {
             selectedBase: basesList.find(b => b.id === preset.baseId) || null,
-            selectedCoatings: preset.coatingIds.map(cId => coatingsList.find(c => c.id === cId) || null),
+            selectedCoatings: [...preset.coatingIds.map(cId => coatings.find(c => c.id === cId) || null)],
             activeCoatingSlot: 0,
-            selectedSauces: preset.sauces,
+            selectedSauces: [...preset.sauces],
             selectedDrink: drinksList.find(d => d.id === preset.drinkId) || null,
           };
         }
@@ -797,16 +795,10 @@
       const [isOpen, setIsOpen] = useState(true);
       const [animKey, setAnimKey] = useState(0);
 
-      const currentPrice = (selectedBase ? selectedBase.price : 0) +
-        (selectedDrink ? selectedDrink.price : 0);
-
+      const currentPrice = (selectedBase ? selectedBase.price : 0) + (selectedDrink ? selectedDrink.price : 0);
       const cartTotalCount = cart.length;
       const cartTotalPrice = cart.reduce((a, b) => a + b.price, 0);
 
-      // CÓDIGO CORREGIDO PARA PRUEBAS:
-      //useEffect(() => {
-      //setIsOpen(true); // Siempre abierto para desarrollo/pruebas
-      //}, []);
       useEffect(() => {
         const checkOpenStatus = () => {
           const now = new Date();
@@ -825,9 +817,7 @@
         }
       }, []);
 
-      const triggerAnimation = () => {
-        setAnimKey(prev => prev + 1);
-      };
+      const triggerAnimation = () => setAnimKey(prev => prev + 1);
 
       const handleBaseChange = (base) => {
         playSound('click');
@@ -851,20 +841,21 @@
         setTimeout(() => setToastMessage(null), 3000);
       };
 
-      const toggleSauce = (id) => {
+      const toggleSauce = (sauceObj) => {
         playSound('click');
-        if (!selectedSauces.includes(id) && selectedSauces.length >= 6) {
+        const exists = selectedSauces.some(s => s.id === sauceObj.id);
+        if (!exists && selectedSauces.length >= 6) {
           showToast("Máximo 6 complementos por orden");
           return;
         }
-        dispatch({ type: 'TOGGLE_SAUCE', payload: id });
+        dispatch({ type: 'TOGGLE_SAUCE', payload: sauceObj });
       };
 
       const applyPreset = (preset) => {
         playSound('click');
         dispatch({
           type: 'APPLY_PRESET',
-          payload: { preset, basesList: bases, coatingsList: coatings, drinksList: drinks }
+          payload: { preset, basesList: bases, drinksList: drinks }
         });
         triggerAnimation();
         showToast(`Preset "${preset.name}" cargado`);
@@ -924,7 +915,7 @@
           id: Date.now(),
           base: selectedBase.name,
           coatings: selectedCoatings,
-          sauces: selectedSauces.map(s => availableSauces.find(x => x.id === s)?.name).join(', ') || 'Sin salsas ni extras',
+          sauces: [...selectedSauces],
           drink: selectedDrink ? selectedDrink.name : null,
           drinkImage: selectedDrink ? selectedDrink.image : null,
           price: currentPrice
@@ -945,7 +936,7 @@
         }
       };
 
-      const checkoutWhatsApp = () => {
+      const checkoutWhatsApp = async () => {
         if (cart.length === 0 || !isOpen) return;
 
         const errors = {};
@@ -962,9 +953,21 @@
 
         playSound('success');
 
-        // Guardar pedido localmente para sincronización de pruebas
+        // Obtener un número de pedido secuencial de forma atómica (contador/pedidos en Firebase)
+        let orderNumber = null;
+        try {
+          if (window.db && window.ref && window.runTransaction) {
+            const counterRef = window.ref(window.db, 'contador/pedidos');
+            const result = await window.runTransaction(counterRef, (current) => (current || 0) + 1);
+            orderNumber = result && result.committed ? result.snapshot.val() : null;
+          }
+        } catch (e) {
+          orderNumber = null; // si falla, se usa el respaldo con los últimos dígitos del timestamp
+        }
+
         const newOrderRecord = {
           id: Date.now(),
+          orderNumber: orderNumber,
           customer: customerName.trim(),
           phone: customerPhone.trim(),
           deliveryType,
@@ -975,10 +978,18 @@
           status: 'pending',
           timestamp: new Date().toISOString()
         };
-        const existingOrders = JSON.parse(localStorage.getItem('banderillas_orders') || '[]');
-        localStorage.setItem('banderillas_orders', JSON.stringify([...existingOrders, newOrderRecord]));
+
+        // Guardar directamente en Firebase Realtime Database
+        let newOrderRef = null;
+        if (window.db && window.ref && window.push) {
+          const ordersRef = window.ref(window.db, 'pedidos');
+          newOrderRef = window.push(ordersRef, newOrderRecord);
+        }
+
+        const displayNumber = orderNumber ? orderNumber : newOrderRecord.id.toString().slice(-4);
 
         let message = "🌭 *¡NUEVO PEDIDO BANDERILLAS COREANAS!* 🌭\n";
+        message += `🔖 *Pedido #${displayNumber}*\n`;
         message += "📌 *TODAS LAS ÓRDENES INCLUYEN 3 BANDERILLAS*\n\n";
         message += `👤 *Cliente:* ${customerName.trim()}\n`;
         message += `📞 *Teléfono:* ${customerPhone.trim()}\n`;
@@ -997,7 +1008,12 @@
           item.coatings.forEach((c, i) => {
             message += `   - Banderilla ${i + 1}: ${c.name}\n`;
           });
-          message += `• Extras/Salsas: ${item.sauces}\n`;
+          
+          const saucesText = item.sauces.length > 0 
+            ? item.sauces.map(s => s.name).join(', ') 
+            : 'Sin salsas ni extras';
+            
+          message += `• Extras/Salsas: ${saucesText}\n`;
           if (item.drink) message += `• Bebida: ${item.drink}\n`;
           message += `• Precio: $${item.price} MXN\n\n`;
         });
@@ -1009,7 +1025,14 @@
         message += "Por favor confirmen mi pedido para realizar el pago. ¡Muchas gracias! 🔥🧀🌭";
 
         const url = `https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(message)}`;
-        window.open(url, '_blank');
+        const waWindow = window.open(url, '_blank');
+
+        // Si el navegador bloqueó la ventana de WhatsApp, el pedido quedó guardado
+        // pero es posible que el cliente nunca haya enviado el mensaje. Lo marcamos
+        // para que en el panel de administración se muestre una alerta.
+        if (!waWindow && newOrderRef && window.db && window.ref && window.update) {
+          window.update(window.ref(window.db, `pedidos/${newOrderRef.key}`), { popupBlocked: true });
+        }
 
         setCart([]);
         setCustomerName('');
@@ -1029,7 +1052,6 @@
             </div>
           )}
 
-          {/* Botón Flotante del Carrito con Profundidad 3D */}
           {cartTotalCount > 0 && !isCartOpen && (
             <button
               type="button"
@@ -1050,14 +1072,10 @@
             </button>
           )}
 
-          {/* Vista previa izquierda con Perspectiva 3D */}
           <div className="w-full md:w-1/2 min-h-[340px] max-h-[45vh] md:max-h-none md:min-h-[520px] md:h-screen sticky top-0 md:relative z-30 bg-slate-900/90 backdrop-blur-xl flex flex-col items-center justify-center p-4 md:p-12 overflow-y-auto md:overflow-hidden border-b md:border-b-0 md:border-r border-white/10 shadow-xl md:shadow-none" style={{ perspective: '1000px' }}>
-
             <div className="absolute w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-3xl glow-effect pointer-events-none"></div>
 
             <div className="relative w-full h-full flex flex-col items-center justify-center gap-4 md:gap-6 z-10 my-auto max-w-xl">
-
-              {/* TARJETA CABECERA GLASSMORPHISM 3D */}
               <div className="card-3d-glass px-8 py-4 rounded-3xl border border-white/20 shadow-2xl flex flex-col items-center justify-center text-center gap-2 w-full max-w-md">
                 <h1 className="text-xl md:text-2xl font-black text-amber-500 tracking-wide drop-shadow">
                   Banderillas Coreanas
@@ -1078,7 +1096,6 @@
                 </p>
               </div>
 
-              {/* Render visual de las 3 Banderillas en Tarjetas 3DFlotantes */}
               <div className="relative flex justify-center items-center w-full min-h-[180px] md:min-h-[280px]">
                 <div className="grid grid-cols-3 gap-2 md:gap-4 w-full max-w-md">
                   {selectedCoatings.map((c, idx) => {
@@ -1105,7 +1122,6 @@
 
                         {c ? (
                           <div key={`${idx}-${animKey}`} className="animate-pop w-full flex flex-col items-center relative">
-                            {/* MICRO-BADGE FLOTANTE SOBRE IMAGEN CON SOMBRA 3D */}
                             {c.badge && (
                               <span className="absolute top-1 right-1 z-20 bg-amber-400/95 backdrop-blur-md text-slate-950 text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-lg border border-amber-200">
                                 {c.badge}
@@ -1147,19 +1163,15 @@
                   <span className="text-xs text-slate-300 card-3d-glass px-2.5 py-1 md:px-3 md:py-1.5 rounded-xl border-slate-700">Sin Selección Base</span>
                 )}
 
-                {selectedSauces.map(sId => {
-                  const sData = availableSauces.find(x => x.id === sId);
-                  if (!sData) return null;
-                  return (
-                    <div
-                      key={sId}
-                      className="flex items-center gap-1.5 md:gap-2 card-3d-glass px-3 py-1 md:px-4 md:py-2 rounded-xl md:rounded-2xl shadow-xl"
-                    >
-                      <SafeImage src={sData.image} alt={sData.name} fallbackEmoji="🥫" className="w-5 h-5 md:w-6 md:h-6 rounded-full object-cover border border-slate-600 shadow" />
-                      <span className="text-xs font-bold">{sData.name}</span>
-                    </div>
-                  );
-                })}
+                {selectedSauces.map(sObj => (
+                  <div
+                    key={sObj.id}
+                    className="flex items-center gap-1.5 md:gap-2 card-3d-glass px-3 py-1 md:px-4 md:py-2 rounded-xl md:rounded-2xl shadow-xl"
+                  >
+                    <SafeImage src={sObj.image} alt={sObj.name} fallbackEmoji="🥫" className="w-5 h-5 md:w-6 md:h-6 rounded-full object-cover border border-slate-600 shadow" />
+                    <span className="text-xs font-bold">{sObj.name}</span>
+                  </div>
+                ))}
 
                 {selectedDrink && (
                   <div className="flex items-center gap-2 card-3d-glass border-amber-500/60 px-3 py-1 md:px-4 md:py-1.5 rounded-xl md:rounded-2xl shadow-2xl">
@@ -1181,10 +1193,8 @@
             </div>
           </div>
 
-          {/* Panel Lateral */}
           <div className="w-full md:w-1/2 p-6 md:p-10 pb-28 md:pb-10 overflow-y-auto md:max-h-screen bg-slate-950 flex flex-col justify-between">
             <div>
-
               <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-800">
                 <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Personaliza tu Pedido</span>
                 <button
@@ -1218,7 +1228,6 @@
                 </div>
               )}
 
-              {/* Opción 1: Selección de Orden */}
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-1.5">
                   <h3 className="text-sm font-bold text-orange-400 flex items-center gap-1.5">
@@ -1252,7 +1261,6 @@
                 </div>
               </div>
 
-              {/* Opción 2: Elige los 3 Cubiertos Individuales */}
               <CoatingSelector
                 activeSlot={activeCoatingSlot}
                 coatings={coatings}
@@ -1261,7 +1269,6 @@
                 onSelectCoating={handleCoatingSelect}
               />
 
-              {/* Opción 3: Salsas y Extras */}
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-2.5">
                   <h3 className="text-sm font-bold text-orange-400 flex items-center gap-1.5">
@@ -1272,13 +1279,13 @@
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
                   {availableSauces.map(s => {
-                    const active = selectedSauces.includes(s.id);
+                    const active = selectedSauces.some(item => item.id === s.id);
                     return (
                       <button
                         key={s.id}
                         type="button"
                         aria-label={`Seleccionar salsa ${s.name}`}
-                        onClick={() => toggleSauce(s.id)}
+                        onClick={() => toggleSauce(s)}
                         className={`p-2 rounded-xl border flex items-center gap-2.5 transition-all transform active:scale-95 card-3d-glass ${active
                           ? 'border-orange-500 bg-orange-500/30 text-white font-bold shadow-lg ring-1 ring-orange-500/40 -translate-y-0.5'
                           : 'hover:border-slate-700 hover:-translate-y-0.5'
@@ -1297,7 +1304,6 @@
                 </div>
               </div>
 
-              {/* Opción 4: Bebida (Con Carrusel Deslizable) */}
               <div className="mb-6">
                 <h3 className="text-sm font-bold text-orange-400 mb-2.5 flex items-center gap-1.5">
                   <span className="w-5 h-5 bg-orange-500/20 text-orange-400 rounded-full flex items-center justify-center text-xs border border-orange-500/40">4</span>
@@ -1356,7 +1362,6 @@
               </div>
             </div>
 
-            {/* STICKY BOTTOM BAR (Barra flotante fija en la parte inferior para móviles con relieve 3D) */}
             <div className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto bg-slate-950/90 backdrop-blur-xl md:bg-transparent p-4 md:p-0 md:pt-4 border-t border-white/10 flex items-center justify-between gap-4 z-40 shadow-2xl md:shadow-none">
               <div>
                 <span className="text-2xl md:text-3xl font-black text-orange-400 drop-shadow">${currentPrice} MXN</span>
@@ -1375,7 +1380,6 @@
             </div>
           </div>
 
-          {/* Modal Carrito Componentizado */}
           <CartModal
             isOpen={isCartOpen}
             cart={cart}

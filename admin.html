@@ -22,8 +22,37 @@
 <body class="bg-slate-950 text-slate-200 font-sans h-screen overflow-hidden flex flex-col">
   <div id="root" class="h-full"></div>
 
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAuL5YKxucoHUKCkoz5j6m9KU1XjTP0Z2o",
+      authDomain: "banderillascoreanas-f9e60.firebaseapp.com",
+      databaseURL: "https://banderillascoreanas-f9e60-default-rtdb.firebaseio.com",
+      projectId: "banderillascoreanas-f9e60",
+      storageBucket: "banderillascoreanas-f9e60.firebasestorage.app",
+      messagingSenderId: "30789485951",
+      appId: "1:30789485951:web:bb31aec060f17ad6ea864a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    window.db = db;
+    window.ref = ref;
+    window.onValue = onValue;
+    window.update = update;
+    window.remove = remove;
+    window.auth = auth;
+    window.onAuthStateChanged = onAuthStateChanged;
+    window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+    window.signOut = signOut;
+  </script>
+
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useRef, useMemo } = React;
 
     const COLUMNS = [
       { id: 'pending', title: '🟡 Nuevos Pedidos', bgColor: 'bg-yellow-500/10', borderColor: 'border-yellow-500/30' },
@@ -32,31 +61,135 @@
       { id: 'completed', title: '✅ Entregados', bgColor: 'bg-emerald-500/10', borderColor: 'border-emerald-500/30' }
     ];
 
+    function LoginScreen() {
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [error, setError] = useState('');
+      const [loading, setLoading] = useState(false);
+
+      const handleLogin = async (e) => {
+        e.preventDefault();
+        setError('');
+        if (!email.trim() || !password) {
+          setError('Ingresa tu correo y contraseña.');
+          return;
+        }
+        setLoading(true);
+        try {
+          await window.signInWithEmailAndPassword(window.auth, email.trim(), password);
+        } catch (err) {
+          setError('Correo o contraseña incorrectos.');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div className="h-full w-full flex items-center justify-center bg-slate-950">
+          <form onSubmit={handleLogin} className="glass-panel p-8 rounded-2xl w-full max-w-sm space-y-4 shadow-2xl">
+            <h1 className="text-xl font-black text-orange-500 text-center tracking-wide">🔥 BANDERILLAS COREANAS <span className="text-white block text-sm font-bold mt-1">Acceso Admin</span></h1>
+            <div>
+              <label className="text-xs font-bold text-slate-300 block mb-1">Correo</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                placeholder="admin@tucorreo.com"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-slate-300 block mb-1">Contraseña</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                placeholder="••••••••"
+              />
+            </div>
+            {error && <p className="text-xs text-red-400">{error}</p>}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 text-white font-extrabold py-2.5 rounded-lg transition"
+            >
+              {loading ? 'Entrando...' : 'Entrar'}
+            </button>
+          </form>
+        </div>
+      );
+    }
+
+    function AuthGate() {
+      const [user, setUser] = useState(undefined); // undefined = cargando, null = sin sesión
+
+      useEffect(() => {
+        const checkAuth = setInterval(() => {
+          if (window.auth && window.onAuthStateChanged) {
+            clearInterval(checkAuth);
+            window.onAuthStateChanged(window.auth, (u) => setUser(u || null));
+          }
+        }, 300);
+        return () => clearInterval(checkAuth);
+      }, []);
+
+      if (user === undefined) {
+        return <div className="h-full w-full flex items-center justify-center bg-slate-950 text-slate-400 text-sm">Cargando...</div>;
+      }
+      if (user === null) {
+        return <LoginScreen />;
+      }
+      return <App />;
+    }
+
     function App() {
       const [orders, setOrders] = useState([]);
+      const [historyOrders, setHistoryOrders] = useState([]);
       const [soundEnabled, setSoundEnabled] = useState(false);
+      const [showReports, setShowReports] = useState(false);
+      const prevOrderCount = useRef(0);
 
-      // Cargar órdenes y escuchar cambios en tiempo real desde la otra pestaña
       useEffect(() => {
-        const loadOrders = () => {
-          const stored = localStorage.getItem('banderillas_orders');
-          if (stored) {
-            const parsedOrders = JSON.parse(stored);
-            if (parsedOrders.length > orders.length && soundEnabled) {
-               playNotification();
-            }
-            setOrders(parsedOrders);
-          }
-        };
+        const checkFirebase = setInterval(() => {
+          if (window.db && window.ref && window.onValue) {
+            clearInterval(checkFirebase);
+            const ordersRef = window.ref(window.db, 'pedidos');
+            const historyRef = window.ref(window.db, 'pedidos_historial');
 
-        loadOrders();
-        window.addEventListener('storage', loadOrders);
-        const interval = setInterval(loadOrders, 2000);
-        return () => {
-          window.removeEventListener('storage', loadOrders);
-          clearInterval(interval);
-        };
-      }, [orders.length, soundEnabled]);
+            window.onValue(ordersRef, (snapshot) => {
+              const data = snapshot.val();
+              if (data) {
+                const loadedOrders = Object.keys(data).map(key => ({
+                  firebaseKey: key,
+                  ...data[key]
+                }));
+
+                if (loadedOrders.length > prevOrderCount.current && soundEnabled) {
+                  playNotification();
+                }
+                prevOrderCount.current = loadedOrders.length;
+                setOrders(loadedOrders);
+              } else {
+                setOrders([]);
+                prevOrderCount.current = 0;
+              }
+            });
+
+            window.onValue(historyRef, (snapshot) => {
+              const data = snapshot.val();
+              if (data) {
+                setHistoryOrders(Object.keys(data).map(key => ({ firebaseKey: key, ...data[key] })));
+              } else {
+                setHistoryOrders([]);
+              }
+            });
+          }
+        }, 300);
+
+        return () => clearInterval(checkFirebase);
+      }, [soundEnabled]);
 
       const playNotification = () => {
         try {
@@ -75,20 +208,16 @@
         } catch (e) {}
       };
 
-      // Función para enviar mensaje por WhatsApp al cliente
       const sendWhatsAppStatusUpdate = (order, newStatus) => {
         if (!order.phone) return;
 
-        // Limpia el número quitando cualquier carácter no numérico
         let cleanPhone = order.phone.replace(/\D/g, '');
-        
-        // Asume lada de México (52) si no la tiene incluida
         if (cleanPhone.length === 10) {
           cleanPhone = '52' + cleanPhone;
         }
 
         let message = "";
-        const orderNum = order.id.toString().slice(-4);
+        const orderNum = order.orderNumber ? order.orderNumber : (order.id ? order.id.toString().slice(-4) : "0000");
 
         switch (newStatus) {
           case 'preparing':
@@ -110,42 +239,83 @@
         window.open(url, '_blank');
       };
 
-      const updateOrderStatus = (orderId, newStatus) => {
-        const targetOrder = orders.find(o => o.id === orderId);
-        const updatedOrders = orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
-        
-        setOrders(updatedOrders);
-        localStorage.setItem('banderillas_orders', JSON.stringify(updatedOrders));
-
-        // Activa la actualización por WhatsApp
-        if (targetOrder) {
-          sendWhatsAppStatusUpdate(targetOrder, newStatus);
+      const updateOrderStatus = (order, newStatus) => {
+        if (window.db && window.ref && window.update && order.firebaseKey) {
+          const orderRef = window.ref(window.db, `pedidos/${order.firebaseKey}`);
+          window.update(orderRef, { status: newStatus });
+          sendWhatsAppStatusUpdate(order, newStatus);
         }
       };
 
-      const deleteOrder = (orderId) => {
-        if(window.confirm('¿Seguro que deseas eliminar este pedido del historial?')) {
-          const updatedOrders = orders.filter(o => o.id !== orderId);
-          setOrders(updatedOrders);
-          localStorage.setItem('banderillas_orders', JSON.stringify(updatedOrders));
+      const deleteOrder = (firebaseKey) => {
+        if (window.confirm('¿Seguro que deseas eliminar este pedido del historial?')) {
+          if (window.db && window.ref && window.remove && firebaseKey) {
+            const orderRef = window.ref(window.db, `pedidos/${firebaseKey}`);
+            window.remove(orderRef);
+          }
         }
       };
 
       const clearCompleted = () => {
-        if(window.confirm('¿Limpiar todos los pedidos entregados?')) {
-          const updatedOrders = orders.filter(o => o.status !== 'completed');
-          setOrders(updatedOrders);
-          localStorage.setItem('banderillas_orders', JSON.stringify(updatedOrders));
+        if (window.confirm('¿Archivar todos los pedidos entregados? Se moverán al historial y podrás verlos luego en Reportes.')) {
+          const completedOrders = orders.filter(o => o.status === 'completed');
+          if (completedOrders.length === 0 || !window.db || !window.ref || !window.update) return;
+
+          const updates = {};
+          completedOrders.forEach(o => {
+            if (o.firebaseKey) {
+              const { firebaseKey, ...orderData } = o;
+              updates[`pedidos_historial/${firebaseKey}`] = { ...orderData, archivedAt: new Date().toISOString() };
+              updates[`pedidos/${firebaseKey}`] = null;
+            }
+          });
+          window.update(window.ref(window.db), updates);
         }
       };
 
-      // Estadísticas
-      const totalSales = orders.filter(o => o.status === 'completed').reduce((sum, o) => sum + o.total, 0);
+      const totalSales = orders.filter(o => o.status === 'completed').reduce((sum, o) => sum + (o.total || 0), 0);
       const pendingCount = orders.filter(o => o.status === 'pending').length;
+
+      // --- Reportes: ventas por periodo y combos/empanizados más pedidos ---
+      const allSales = useMemo(() => [...orders.filter(o => o.status === 'completed'), ...historyOrders], [orders, historyOrders]);
+
+      const salesReport = useMemo(() => {
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const dayOfWeek = (now.getDay() + 6) % 7; // lunes = 0
+        const startOfWeek = new Date(startOfToday);
+        startOfWeek.setDate(startOfToday.getDate() - dayOfWeek);
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        let hoy = 0, semana = 0, mes = 0;
+        const baseCounts = {};
+        const coatingCounts = {};
+
+        allSales.forEach(o => {
+          const t = o.timestamp ? new Date(o.timestamp) : null;
+          const total = o.total || 0;
+          if (t) {
+            if (t >= startOfToday) hoy += total;
+            if (t >= startOfWeek) semana += total;
+            if (t >= startOfMonth) mes += total;
+          }
+          (o.cart || []).forEach(item => {
+            if (item.base) baseCounts[item.base] = (baseCounts[item.base] || 0) + 1;
+            (item.coatings || []).forEach(c => {
+              const name = c && c.name ? c.name : null;
+              if (name) coatingCounts[name] = (coatingCounts[name] || 0) + 1;
+            });
+          });
+        });
+
+        const topBases = Object.entries(baseCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+        const topCoatings = Object.entries(coatingCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+        return { hoy, semana, mes, topBases, topCoatings, totalOrdenes: allSales.length };
+      }, [allSales]);
 
       return (
         <div className="h-full flex flex-col">
-          {/* Header */}
           <header className="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center shrink-0">
             <div className="flex items-center gap-4">
               <h1 className="text-xl font-black text-orange-500 tracking-wider">🔥 BANDERILLAS COREANAS <span className="text-white">ADMIN</span></h1>
@@ -156,7 +326,7 @@
                 {soundEnabled ? '🔊 Sonido Activado' : '🔇 Activar Sonido'}
               </button>
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-4 items-center">
               <div className="text-right">
                 <span className="text-xs text-slate-400 block uppercase">Nuevos Hoy</span>
                 <span className="text-lg font-bold text-yellow-400">{pendingCount} pedidos</span>
@@ -165,10 +335,25 @@
                 <span className="text-xs text-slate-400 block uppercase">Ventas (Completadas)</span>
                 <span className="text-lg font-bold text-emerald-400">${totalSales} MXN</span>
               </div>
+              <button
+                onClick={() => setShowReports(true)}
+                className="text-xs px-3 py-1.5 rounded-full border border-slate-600 text-slate-300 hover:border-orange-500 hover:text-orange-400 transition"
+              >
+                📊 Reportes
+              </button>
+              <button
+                onClick={() => window.signOut(window.auth)}
+                className="text-xs px-3 py-1.5 rounded-full border border-slate-600 text-slate-400 hover:border-red-500 hover:text-red-400 transition"
+              >
+                🚪 Salir
+              </button>
             </div>
           </header>
 
-          {/* Tablero Kanban */}
+          {showReports && (
+            <ReportsModal report={salesReport} onClose={() => setShowReports(false)} />
+          )}
+
           <div className="flex-1 overflow-x-auto p-4 flex gap-4 no-scrollbar items-stretch">
             {COLUMNS.map(col => {
               const colOrders = orders.filter(o => o.status === col.id).sort((a, b) => b.id - a.id);
@@ -184,14 +369,19 @@
                       <p className="text-xs text-slate-500 text-center py-4">Sin pedidos aquí</p>
                     ) : (
                       colOrders.map(order => (
-                        <div key={order.id} className="glass-panel p-3 rounded-xl shadow-lg relative group">
-                          <button onClick={() => deleteOrder(order.id)} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                        <div key={order.firebaseKey || order.id} className="glass-panel p-3 rounded-xl shadow-lg relative group">
+                          <button onClick={() => deleteOrder(order.firebaseKey)} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
                           
                           <div className="flex justify-between items-start mb-2 border-b border-white/10 pb-2">
                             <div>
-                              <span className="text-xs text-slate-400">#{order.id.toString().slice(-4)} - {new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                              <span className="text-xs text-slate-400">#{order.orderNumber ? order.orderNumber : (order.id ? order.id.toString().slice(-4) : "----")} - {order.timestamp ? new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}</span>
                               <h3 className="font-bold text-white text-sm">{order.customer}</h3>
                               <a href={`tel:${order.phone}`} className="text-xs text-orange-400 hover:underline">📞 {order.phone}</a>
+                              {order.popupBlocked && (
+                                <span className="block mt-1 text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/30 px-1.5 py-0.5 rounded w-fit">
+                                  ⚠️ Posible WhatsApp no enviado - confirma por llamada
+                                </span>
+                              )}
                             </div>
                             <span className="font-black text-emerald-400">${order.total}</span>
                           </div>
@@ -206,32 +396,50 @@
                           </div>
 
                           <div className="bg-slate-900/50 p-2 rounded-lg mb-3 space-y-2">
-                            {order.cart.map((item, i) => (
+                            {order.cart && order.cart.map((item, i) => (
                               <div key={i} className="text-xs border-b border-white/5 last:border-0 pb-1">
                                 <span className="font-bold text-orange-300">Orden {i+1}: {item.base}</span>
                                 <ul className="pl-2 list-disc list-inside text-slate-300 text-[10px]">
-                                  {item.coatings.map((c, ci) => <li key={ci}>{c.name}</li>)}
+                                  {item.coatings && item.coatings.map((c, ci) => <li key={ci}>{c.name}</li>)}
                                 </ul>
-                                <span className="text-[10px] text-slate-400 block mt-0.5">Salsas: {item.sauces}</span>
-                                {item.drink && <span className="text-[10px] text-amber-400 block">🥤 {item.drink}</span>}
+
+                                <div className="mt-1">
+                                  <span className="text-[10px] text-slate-400 block font-semibold">Salsas:</span>
+                                  {Array.isArray(item.sauces) ? (
+                                    item.sauces.length > 0 ? (
+                                      <div className="flex flex-wrap gap-1 mt-0.5">
+                                        {item.sauces.map((s, idx) => (
+                                          <span key={s.id || idx} className="bg-amber-500/10 text-amber-300 border border-amber-500/20 px-1.5 py-0.5 rounded text-[9px]">
+                                            {typeof s === 'object' ? s.name : s}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-[10px] text-slate-500 italic">Sin salsas</span>
+                                    )
+                                  ) : (
+                                    <span className="text-[10px] text-slate-300">{item.sauces}</span>
+                                  )}
+                                </div>
+
+                                {item.drink && <span className="text-[10px] text-amber-400 block mt-1">🥤 {item.drink}</span>}
                               </div>
                             ))}
                           </div>
 
-                          {/* Botones de Acción que avanzan el estado y abren WhatsApp */}
                           <div className="flex gap-2">
                             {col.id === 'pending' && (
-                              <button onClick={() => updateOrderStatus(order.id, 'preparing')} className="flex-1 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold py-2 rounded-lg transition flex items-center justify-center gap-1">
+                              <button onClick={() => updateOrderStatus(order, 'preparing')} className="flex-1 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold py-2 rounded-lg transition flex items-center justify-center gap-1">
                                 <span>Aceptar y Avisar</span> 💬
                               </button>
                             )}
                             {col.id === 'preparing' && (
-                              <button onClick={() => updateOrderStatus(order.id, 'shipping')} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2 rounded-lg transition flex items-center justify-center gap-1">
+                              <button onClick={() => updateOrderStatus(order, 'shipping')} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2 rounded-lg transition flex items-center justify-center gap-1">
                                 <span>Enviar / Avisar</span> 💬
                               </button>
                             )}
                             {col.id === 'shipping' && (
-                              <button onClick={() => updateOrderStatus(order.id, 'completed')} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 rounded-lg transition flex items-center justify-center gap-1">
+                              <button onClick={() => updateOrderStatus(order, 'completed')} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 rounded-lg transition flex items-center justify-center gap-1">
                                 <span>Entregado y Avisar</span> ✅
                               </button>
                             )}
@@ -243,7 +451,7 @@
                   
                   {col.id === 'completed' && colOrders.length > 0 && (
                     <div className="p-2 bg-black/20 border-t border-white/10">
-                      <button onClick={clearCompleted} className="w-full text-xs text-slate-400 hover:text-white py-1">Limpiar Entregados</button>
+                      <button onClick={clearCompleted} className="w-full text-xs text-slate-400 hover:text-white py-1">📦 Archivar Entregados</button>
                     </div>
                   )}
                 </div>
@@ -253,7 +461,69 @@
         </div>
       );
     }
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    function ReportsModal({ report, onClose }) {
+      return (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={onClose}>
+          <div className="glass-panel w-full max-w-lg rounded-2xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto no-scrollbar" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+              <h2 className="text-lg font-black text-orange-400">📊 Reportes de Ventas</h2>
+              <button onClick={onClose} className="text-slate-400 hover:text-white text-xl font-bold">✕</button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 mb-5">
+              <div className="bg-slate-900/70 rounded-xl p-3 text-center border border-slate-700">
+                <span className="text-[10px] uppercase text-slate-400 block">Hoy</span>
+                <span className="text-lg font-black text-emerald-400">${report.hoy}</span>
+              </div>
+              <div className="bg-slate-900/70 rounded-xl p-3 text-center border border-slate-700">
+                <span className="text-[10px] uppercase text-slate-400 block">Esta Semana</span>
+                <span className="text-lg font-black text-emerald-400">${report.semana}</span>
+              </div>
+              <div className="bg-slate-900/70 rounded-xl p-3 text-center border border-slate-700">
+                <span className="text-[10px] uppercase text-slate-400 block">Este Mes</span>
+                <span className="text-lg font-black text-emerald-400">${report.mes}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-400 mb-4">Basado en {report.totalOrdenes} pedidos entregados (activos + archivados).</p>
+
+            <div className="mb-5">
+              <h3 className="text-sm font-bold text-orange-400 mb-2">🏆 Órdenes más pedidas</h3>
+              {report.topBases.length === 0 ? (
+                <p className="text-xs text-slate-500">Aún no hay suficientes datos.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {report.topBases.map(([name, count], i) => (
+                    <div key={name} className="flex justify-between items-center bg-slate-900/50 px-3 py-1.5 rounded-lg border border-slate-800">
+                      <span className="text-xs text-slate-200">{i + 1}. {name}</span>
+                      <span className="text-xs font-bold text-orange-400">{count}x</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-sm font-bold text-orange-400 mb-2">🧀 Empanizados favoritos</h3>
+              {report.topCoatings.length === 0 ? (
+                <p className="text-xs text-slate-500">Aún no hay suficientes datos.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {report.topCoatings.map(([name, count], i) => (
+                    <div key={name} className="flex justify-between items-center bg-slate-900/50 px-3 py-1.5 rounded-lg border border-slate-800">
+                      <span className="text-xs text-slate-200">{i + 1}. {name}</span>
+                      <span className="text-xs font-bold text-orange-400">{count}x</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<AuthGate />);
   </script>
 </body>
 </html>
