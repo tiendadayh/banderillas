@@ -779,5 +779,99 @@ function ReportsModal({
 }
 ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(AuthGate, null));
   </script>
+  <!-- Deslizar hacia abajo para actualizar -->
+  <div id="ptr-indicator" style="position:fixed;top:0;left:50%;transform:translate(-50%,-60px);width:38px;height:38px;display:flex;align-items:center;justify-content:center;z-index:99999;pointer-events:none;">
+    <div id="ptr-spinner" style="width:26px;height:26px;border-radius:50%;border:3px solid rgba(249,115,22,0.25);border-top-color:#f97316;opacity:0;"></div>
+  </div>
+  <style>
+    @keyframes ptr-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  </style>
+  <script>
+    (function () {
+      var indicator = document.getElementById('ptr-indicator');
+      var spinner = document.getElementById('ptr-spinner');
+      var THRESHOLD = 70;
+      var MAX_PULL = 110;
+      var startY = 0;
+      var currentPull = 0;
+      var pulling = false;
+      var refreshing = false;
+
+      function isInsideOverlay(el) {
+        while (el && el !== document.body) {
+          var cls = el.className && el.className.baseVal !== undefined ? el.className.baseVal : el.className;
+          if (typeof cls === 'string' && cls.indexOf('fixed') !== -1 && cls.indexOf('inset-0') !== -1) {
+            return true;
+          }
+          el = el.parentElement;
+        }
+        return false;
+      }
+
+      function findScrollableAncestor(el) {
+        while (el && el !== document.body) {
+          var style = window.getComputedStyle(el);
+          if ((style.overflowY === 'auto' || style.overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
+            return el;
+          }
+          el = el.parentElement;
+        }
+        return null;
+      }
+
+      function getScrollTop(el) {
+        return el ? el.scrollTop : (window.scrollY || document.documentElement.scrollTop);
+      }
+
+      function setPull(px) {
+        currentPull = px;
+        indicator.style.transform = 'translate(-50%, ' + (px - 60) + 'px)';
+        spinner.style.opacity = Math.min(px / THRESHOLD, 1);
+        spinner.style.transform = 'rotate(' + (px * 3) + 'deg)';
+      }
+
+      document.addEventListener('touchstart', function (e) {
+        if (refreshing) return;
+        var target = e.touches[0].target;
+        if (isInsideOverlay(target)) { pulling = false; return; }
+        var scrollEl = findScrollableAncestor(target);
+        if (getScrollTop(scrollEl) <= 0) {
+          startY = e.touches[0].clientY;
+          pulling = true;
+          window.__ptrScrollEl = scrollEl;
+        } else {
+          pulling = false;
+        }
+      }, { passive: true });
+
+      document.addEventListener('touchmove', function (e) {
+        if (!pulling || refreshing) return;
+        var deltaY = e.touches[0].clientY - startY;
+        if (deltaY <= 0 || getScrollTop(window.__ptrScrollEl) > 0) {
+          setPull(0);
+          return;
+        }
+        e.preventDefault();
+        setPull(Math.min(deltaY, MAX_PULL));
+      }, { passive: false });
+
+      document.addEventListener('touchend', function () {
+        if (!pulling || refreshing) { pulling = false; return; }
+        pulling = false;
+        if (currentPull >= THRESHOLD) {
+          refreshing = true;
+          indicator.style.transition = 'transform 0.15s ease';
+          indicator.style.transform = 'translate(-50%, 12px)';
+          spinner.style.opacity = 1;
+          spinner.style.animation = 'ptr-spin 0.6s linear infinite';
+          setTimeout(function () { window.location.reload(); }, 250);
+        } else {
+          indicator.style.transition = 'transform 0.2s ease';
+          setPull(0);
+          setTimeout(function () { indicator.style.transition = ''; }, 200);
+        }
+      }, { passive: true });
+    })();
+  </script>
 </body>
 </html>
