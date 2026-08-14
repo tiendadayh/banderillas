@@ -165,11 +165,6 @@ function App() {
   const [showReports, setShowReports] = useState(false);
   const prevOrderCount = useRef(0);
   const soundEnabledRef = useRef(soundEnabled);
-  const [notifEnabled, setNotifEnabled] = useState(() => {
-    const saved = localStorage.getItem('banderillas_notif_enabled');
-    return saved === 'true' && typeof Notification !== 'undefined' && Notification.permission === 'granted';
-  });
-  const notifEnabledRef = useRef(notifEnabled);
   const audioCtxRef = useRef(null);
   const firstOrdersLoad = useRef(true);
   const [hasNewOrder, setHasNewOrder] = useState(false);
@@ -195,33 +190,6 @@ function App() {
     soundEnabledRef.current = soundEnabled;
     localStorage.setItem('banderillas_sound_enabled', soundEnabled);
   }, [soundEnabled]);
-  useEffect(() => {
-    notifEnabledRef.current = notifEnabled;
-    localStorage.setItem('banderillas_notif_enabled', notifEnabled);
-  }, [notifEnabled]);
-
-  // Pide permiso al navegador para mostrar notificaciones. Debe llamarse desde
-  // un clic del usuario (botón), los navegadores bloquean el permiso si se pide
-  // solo al cargar la página.
-  const enableNotifications = async () => {
-    if (typeof Notification === 'undefined') {
-      alert('Este navegador no soporta notificaciones.');
-      return;
-    }
-    if (Notification.permission === 'granted') {
-      setNotifEnabled(true);
-      return;
-    }
-    if (Notification.permission === 'denied') {
-      alert('Las notificaciones están bloqueadas para este sitio. Actívalas desde el ícono de candado/configuración del navegador junto a la dirección web, y vuelve a intentar.');
-      return;
-    }
-    const permission = await Notification.requestPermission();
-    setNotifEnabled(permission === 'granted');
-    if (permission !== 'granted') {
-      alert('No se activaron las notificaciones. Puedes intentarlo de nuevo cuando quieras.');
-    }
-  };
   const requestWakeLock = async () => {
     if (!('wakeLock' in navigator)) {
       alert('Este navegador/dispositivo no soporta mantener la pantalla activa.');
@@ -262,20 +230,6 @@ function App() {
     if (wakeLockEnabled) requestWakeLock();
     return () => releaseWakeLock();
   }, []);
-  const notifyNewOrder = count => {
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-    try {
-      const notif = new Notification('🔔 ¡Nuevo pedido! - Banderillas Coreanas', {
-        body: count > 1 ? `Tienes ${count} pedidos nuevos esperando revisión.` : 'Tienes un pedido nuevo esperando revisión.',
-        icon: 'portada.jpg',
-        tag: 'banderillas-nuevo-pedido'
-      });
-      notif.onclick = () => {
-        window.focus();
-        notif.close();
-      };
-    } catch (e) {}
-  };
 
   // Dibuja un badge numérico sobre el favicon para ver de un vistazo, incluso
   // con la pestaña en segundo plano entre varias, cuántos pedidos hay sin abrir.
@@ -397,17 +351,24 @@ function App() {
             const arrivedKeys = [...currentKeys].filter(k => !prevOrderKeysRef.current.has(k));
             if (arrivedKeys.length > 0 && !firstOrdersLoad.current) {
               if (soundEnabledRef.current) playNotification();
-              if (notifEnabledRef.current) notifyNewOrder(arrivedKeys.length);
               if ('vibrate' in navigator) navigator.vibrate([200, 100, 200, 100, 200]);
               setNewOrderKeys(prev => new Set([...prev, ...arrivedKeys]));
               setHasNewOrder(true);
             }
+            // Si un pedido marcado como "nuevo" ya no está en la lista (lo borraron,
+            // se archivó, etc.), lo quitamos de newOrderKeys para que el sonido
+            // repetido no siga sonando por un pedido que ya no existe.
+            setNewOrderKeys(prev => {
+              const pruned = [...prev].filter(k => currentKeys.has(k));
+              return pruned.length === prev.size ? prev : new Set(pruned);
+            });
             prevOrderKeysRef.current = currentKeys;
             firstOrdersLoad.current = false;
             prevOrderCount.current = loadedOrders.length;
             setOrders(loadedOrders);
           } else {
             prevOrderKeysRef.current = new Set();
+            setNewOrderKeys(new Set());
             setOrders([]);
             prevOrderCount.current = 0;
             firstOrdersLoad.current = false;
@@ -599,15 +560,6 @@ function App() {
     },
     className: `text-[10px] sm:text-xs px-2.5 sm:px-3 py-1 rounded-full border whitespace-nowrap ${soundEnabled ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-slate-600 text-slate-400'}`
   }, soundEnabled ? '🔊 Sonido' : '🔇 Sonido'), /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      if (notifEnabled) {
-        setNotifEnabled(false);
-      } else {
-        enableNotifications();
-      }
-    },
-    className: `text-[10px] sm:text-xs px-2.5 sm:px-3 py-1 rounded-full border whitespace-nowrap ${notifEnabled ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-slate-600 text-slate-400'}`
-  }, notifEnabled ? '🔔 Notificaciones' : '🔕 Notificaciones'), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       if (wakeLockEnabled) {
         releaseWakeLock();
