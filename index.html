@@ -31,7 +31,6 @@
 
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
     body {
@@ -229,1183 +228,1127 @@
     window.ref = ref;
   </script>
 
-  <script type="text/babel">
-    const { useState, useEffect, useReducer } = React;
-
-    const PHONE_NUMBER = "527442411773";
-    const OPEN_HOUR = 13;
-    const CLOSE_HOUR = 20;
-
-    const PLACEHOLDER_FOOD = "https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&w=400&q=80";
-    const PLACEHOLDER_DRINK = "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&q=80";
-
-    const playSound = (type) => {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        if (type === 'click') {
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(400, ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.08);
-          gain.gain.setValueAtTime(0.1, ctx.currentTime);
-          gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.08);
-          osc.start();
-          osc.stop(ctx.currentTime + 0.08);
-        } else if (type === 'add') {
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(523.25, ctx.currentTime);
-          osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.08);
-          osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.16);
-          gain.gain.setValueAtTime(0.15, ctx.currentTime);
-          gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-          osc.start();
-          osc.stop(ctx.currentTime + 0.25);
-        } else if (type === 'success') {
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-          osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1);
-          gain.gain.setValueAtTime(0.2, ctx.currentTime);
-          gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-          osc.start();
-          osc.stop(ctx.currentTime + 0.3);
-        }
-      } catch (e) { }
-    };
-
-    const bases = [
-      { id: 'clasica', name: 'Orden Clásica (3 Salchicha)', price: 130, badge: '🌭 3 Banderillas', icon: '🌭' },
-      { id: 'mixta', name: 'Orden Mixta (3 Salchicha + Queso)', price: 160, badge: '⚡🔥 Recomendado', icon: '⚡' },
-      { id: 'queso', name: 'Orden Especial Queso (3 Puro Queso)', price: 180, badge: '🧀🤤 El Favorito', icon: '🧀' }
-    ];
-
-    const coatings = [
-      { id: 'panko', name: 'Clásica (Panko)', price: 0, badge: 'Crujiente', image: 'panko.jpg' },
-      { id: 'cheetos', name: 'Cheetos de Queso', price: 0, badge: 'Quesoso', image: 'cheetos.jpg' },
-      { id: 'flamin', name: 'Cheetos Flamin’ Hot', price: 0, badge: 'Picoso', image: 'flamin.jpg' },
-      { id: 'takis', name: 'Takis Azules', price: 0, badge: 'Picante', image: 'takis.jpg' },
-      { id: 'papas', name: 'Papa', price: 0, badge: 'Crujiente', image: 'papas.jpg' },
-      { id: 'ramen', name: 'Ramen', price: 0, badge: 'Tostado', image: 'ramen.jpg' },
-      { id: 'jalapeno', name: 'Jalapeño', price: 0, badge: 'Especial', image: 'jalapeno.jpg' }
-    ];
-
-    const availableSauces = [
-      { id: 'ketchup', name: 'Ketchup', image: 'ketchup.jpg' },
-      { id: 'queso_amarillo', name: 'Queso Amarillo', image: 'queso.jpg' },
-      { id: 'chile_vinagre', name: 'Chile en Vinagre', image: 'chile.jpg' }
-    ];
-
-    const drinks = [
-      { id: 'boba', name: 'Coca Cola (355ml)', price: 40, image: 'coca.jpg' },
-      { id: 'soda', name: 'Refresco de Lata (355ml)', price: 25, image: 'soda.jpg' },
-      { id: 'agua', name: 'Agua de Horchata', price: 30, image: 'horchata.jpg' }
-    ];
-
-    const chefPresets = [
-      { 
-        name: '🔥 Orden Flamin Fuego', 
-        baseId: 'mixta', 
-        coatingIds: ['flamin', 'flamin', 'flamin'], 
-        sauces: [availableSauces[0], availableSauces[1]], 
-        drinkId: 'agua' 
-      },
-      { 
-        name: '🧀 Orden Suprema Queso', 
-        baseId: 'queso', 
-        coatingIds: ['cheetos', 'cheetos', 'cheetos'], 
-        sauces: [availableSauces[1], availableSauces[0]], 
-        drinkId: 'boba' 
-      },
-      { 
-        name: '🔵 Orden Variada Crunch', 
-        baseId: 'mixta', 
-        coatingIds: ['takis', 'panko', 'flamin'], 
-        sauces: [availableSauces[0], availableSauces[2]], 
-        drinkId: 'soda' 
-      },
-      { 
-        name: '🌭 Orden Clásica Panko', 
-        baseId: 'clasica', 
-        coatingIds: ['panko', 'panko', 'panko'], 
-        sauces: [availableSauces[0], availableSauces[2]], 
-        drinkId: 'soda' 
-      }
-    ];
-
-    function SafeImage({ src, alt, className, fallbackEmoji = "🌭", defaultFallbackUrl = PLACEHOLDER_FOOD }) {
-      const [imgSrc, setImgSrc] = useState(src);
-      const [errorCount, setErrorCount] = useState(0);
-
-      useEffect(() => {
-        setImgSrc(src);
-        setErrorCount(0);
-      }, [src]);
-
-      const handleError = () => {
-        if (errorCount === 0) {
-          setImgSrc(defaultFallbackUrl);
-          setErrorCount(1);
-        } else {
-          setErrorCount(2);
-        }
+  <script type="text/javascript">
+const {
+  useState,
+  useEffect,
+  useReducer
+} = React;
+const PHONE_NUMBER = "527442411773";
+const OPEN_HOUR = 13;
+const CLOSE_HOUR = 20;
+const PLACEHOLDER_FOOD = "https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&w=400&q=80";
+const PLACEHOLDER_DRINK = "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&q=80";
+const playSound = type => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    if (type === 'click') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(400, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.08);
+    } else if (type === 'add') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+      osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.08);
+      osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.16);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.25);
+    } else if (type === 'success') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    }
+  } catch (e) {}
+};
+const bases = [{
+  id: 'clasica',
+  name: 'Orden Clásica (3 Salchicha)',
+  price: 130,
+  badge: '🌭 3 Banderillas',
+  icon: '🌭'
+}, {
+  id: 'mixta',
+  name: 'Orden Mixta (3 Salchicha + Queso)',
+  price: 160,
+  badge: '⚡🔥 Recomendado',
+  icon: '⚡'
+}, {
+  id: 'queso',
+  name: 'Orden Especial Queso (3 Puro Queso)',
+  price: 180,
+  badge: '🧀🤤 El Favorito',
+  icon: '🧀'
+}];
+const coatings = [{
+  id: 'panko',
+  name: 'Clásica (Panko)',
+  price: 0,
+  badge: 'Crujiente',
+  image: 'panko.jpg'
+}, {
+  id: 'cheetos',
+  name: 'Cheetos de Queso',
+  price: 0,
+  badge: 'Quesoso',
+  image: 'cheetos.jpg'
+}, {
+  id: 'flamin',
+  name: 'Cheetos Flamin’ Hot',
+  price: 0,
+  badge: 'Picoso',
+  image: 'flamin.jpg'
+}, {
+  id: 'takis',
+  name: 'Takis Azules',
+  price: 0,
+  badge: 'Picante',
+  image: 'takis.jpg'
+}, {
+  id: 'papas',
+  name: 'Papa',
+  price: 0,
+  badge: 'Crujiente',
+  image: 'papas.jpg'
+}, {
+  id: 'ramen',
+  name: 'Ramen',
+  price: 0,
+  badge: 'Tostado',
+  image: 'ramen.jpg'
+}, {
+  id: 'jalapeno',
+  name: 'Jalapeño',
+  price: 0,
+  badge: 'Especial',
+  image: 'jalapeno.jpg'
+}];
+const availableSauces = [{
+  id: 'ketchup',
+  name: 'Ketchup',
+  image: 'ketchup.jpg'
+}, {
+  id: 'queso_amarillo',
+  name: 'Queso Amarillo',
+  image: 'queso.jpg'
+}, {
+  id: 'chile_vinagre',
+  name: 'Chile en Vinagre',
+  image: 'chile.jpg'
+}];
+const drinks = [{
+  id: 'boba',
+  name: 'Coca Cola (355ml)',
+  price: 40,
+  image: 'coca.jpg'
+}, {
+  id: 'soda',
+  name: 'Refresco de Lata (355ml)',
+  price: 25,
+  image: 'soda.jpg'
+}, {
+  id: 'agua',
+  name: 'Agua de Horchata',
+  price: 30,
+  image: 'horchata.jpg'
+}];
+const chefPresets = [{
+  name: '🔥 Orden Flamin Fuego',
+  baseId: 'mixta',
+  coatingIds: ['flamin', 'flamin', 'flamin'],
+  sauces: [availableSauces[0], availableSauces[1]],
+  drinkId: 'agua'
+}, {
+  name: '🧀 Orden Suprema Queso',
+  baseId: 'queso',
+  coatingIds: ['cheetos', 'cheetos', 'cheetos'],
+  sauces: [availableSauces[1], availableSauces[0]],
+  drinkId: 'boba'
+}, {
+  name: '🔵 Orden Variada Crunch',
+  baseId: 'mixta',
+  coatingIds: ['takis', 'panko', 'flamin'],
+  sauces: [availableSauces[0], availableSauces[2]],
+  drinkId: 'soda'
+}, {
+  name: '🌭 Orden Clásica Panko',
+  baseId: 'clasica',
+  coatingIds: ['panko', 'panko', 'panko'],
+  sauces: [availableSauces[0], availableSauces[2]],
+  drinkId: 'soda'
+}];
+function SafeImage({
+  src,
+  alt,
+  className,
+  fallbackEmoji = "🌭",
+  defaultFallbackUrl = PLACEHOLDER_FOOD
+}) {
+  const [imgSrc, setImgSrc] = useState(src);
+  const [errorCount, setErrorCount] = useState(0);
+  useEffect(() => {
+    setImgSrc(src);
+    setErrorCount(0);
+  }, [src]);
+  const handleError = () => {
+    if (errorCount === 0) {
+      setImgSrc(defaultFallbackUrl);
+      setErrorCount(1);
+    } else {
+      setErrorCount(2);
+    }
+  };
+  if (errorCount >= 2 || !imgSrc) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: `${className} bg-slate-800 flex items-center justify-center text-xl select-none border border-slate-700`
+    }, /*#__PURE__*/React.createElement("span", null, fallbackEmoji));
+  }
+  return /*#__PURE__*/React.createElement("img", {
+    src: imgSrc,
+    alt: alt,
+    className: className,
+    onError: handleError
+  });
+}
+function CoatingSelector({
+  activeSlot,
+  coatings,
+  selectedCoatings,
+  onSelectSlot,
+  onSelectCoating
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "mb-6"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-sm font-bold text-orange-400 mb-2.5 flex items-center gap-1.5"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "w-5 h-5 bg-orange-500/20 text-orange-400 rounded-full flex items-center justify-center text-xs border border-orange-500/40"
+  }, "2"), "Elige el Cubierto para cada Banderilla"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-3 gap-2 mb-3"
+  }, [0, 1, 2].map(slotIdx => {
+    const isCurrentSlot = activeSlot === slotIdx;
+    const coatingSelected = selectedCoatings[slotIdx];
+    return /*#__PURE__*/React.createElement("button", {
+      key: slotIdx,
+      type: "button",
+      "aria-label": `Seleccionar banderilla ${slotIdx + 1}`,
+      onClick: () => onSelectSlot(slotIdx),
+      className: `py-2 px-1 rounded-xl text-xs font-bold transition-all duration-300 transform active:scale-95 flex flex-col items-center justify-center border ${isCurrentSlot ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-orange-300 shadow-xl shadow-orange-500/40 -translate-y-1 scale-105 ring-2 ring-orange-400/80 z-10' : coatingSelected ? 'card-3d-glass text-orange-300 border-orange-500/40 hover:-translate-y-0.5' : 'card-3d-glass text-slate-400 hover:border-slate-700 hover:-translate-y-0.5'}`
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "text-[10px] opacity-90 uppercase tracking-wider font-extrabold"
+    }, "Banderilla #", slotIdx + 1), /*#__PURE__*/React.createElement("span", {
+      className: "truncate max-w-full text-xs font-black"
+    }, coatingSelected ? coatingSelected.name : 'Elegir'));
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex overflow-x-auto gap-2.5 pb-2 pt-1 no-scrollbar snap-x snap-mandatory"
+  }, coatings.map(c => {
+    const isSelectedInCurrentSlot = selectedCoatings[activeSlot]?.id === c.id;
+    return /*#__PURE__*/React.createElement("button", {
+      key: c.id,
+      type: "button",
+      "aria-label": `Empanizado ${c.name}`,
+      onClick: () => onSelectCoating(c),
+      className: `p-3 rounded-xl border text-left flex flex-col justify-between transition-all duration-300 transform active:scale-95 flex-shrink-0 w-36 snap-start card-3d-glass ${isSelectedInCurrentSlot ? 'border-orange-500 bg-orange-500/30 text-white shadow-xl shadow-orange-500/20 ring-1 ring-orange-500/50 -translate-y-1' : 'hover:border-slate-600 hover:-translate-y-0.5'}`
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-col"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "font-semibold text-xs text-slate-200"
+    }, c.name), /*#__PURE__*/React.createElement("span", {
+      className: "text-[10px] text-orange-400 font-bold mt-0.5"
+    }, c.badge)), /*#__PURE__*/React.createElement("span", {
+      className: "text-[10px] font-extrabold text-emerald-400 mt-2"
+    }, isSelectedInCurrentSlot ? '✓ Seleccionado' : 'Asignar a #' + (activeSlot + 1)));
+  })));
+}
+function PresetList({
+  presets,
+  onApply
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "mb-6"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-xs font-bold text-slate-300 uppercase tracking-wider mb-2.5"
+  }, "Recetas Recomendadas"), /*#__PURE__*/React.createElement("div", {
+    className: "flex overflow-x-auto gap-2 pb-1 no-scrollbar snap-x"
+  }, presets.map((preset, idx) => /*#__PURE__*/React.createElement("button", {
+    key: idx,
+    type: "button",
+    "aria-label": `Cargar receta ${preset.name}`,
+    onClick: () => onApply(preset),
+    className: "card-3d-glass hover:bg-slate-800/90 active:scale-95 text-slate-200 border border-white/15 text-xs px-3 py-1.5 rounded-xl transition-all transform font-medium flex items-center gap-1 shadow-md hover:-translate-y-0.5 flex-shrink-0 snap-start"
+  }, preset.name))));
+}
+function CartModal({
+  isOpen,
+  cart,
+  storeOpen,
+  deliveryType,
+  customerName,
+  customerPhone,
+  deliveryAddress,
+  paymentMethod,
+  validationErrors,
+  onClose,
+  onRemoveItem,
+  onCheckout,
+  setCustomerName,
+  setCustomerPhone,
+  setDeliveryAddress,
+  setPaymentMethod,
+  setDeliveryType
+}) {
+  if (!isOpen) return null;
+  const totalCartPrice = cart.reduce((a, b) => a + b.price, 0);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 bg-black/80 backdrop-blur-xl flex justify-end z-50 animate-pop"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-3d-glass w-full max-w-md h-full max-h-screen p-5 flex flex-col justify-between border-l border-white/20 shadow-2xl overflow-hidden"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex-shrink-0 flex justify-between items-center mb-4 border-b border-white/10 pb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-xl font-black text-white"
+  }, "Tu Pedido Detallado"), /*#__PURE__*/React.createElement("span", {
+    className: "bg-orange-500 text-white font-bold text-xs px-2.5 py-0.5 rounded-full shadow-md"
+  }, cart.length)), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    "aria-label": "Cerrar carrito",
+    onClick: onClose,
+    className: "text-slate-400 hover:text-white text-xl font-bold p-1"
+  }, "✕")), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 overflow-y-auto pr-1 space-y-4 min-h-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-3d-glass border-amber-500/40 p-3 rounded-2xl flex items-center gap-3"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-2xl"
+  }, "⏱️"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold text-amber-400 block uppercase tracking-wide"
+  }, "Tiempo Estimado"), /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-black text-white"
+  }, deliveryType === 'delivery' ? '30 - 45 Minutos 🛵' : '15 - 20 Minutos 🏪'))), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, cart.length === 0 ? /*#__PURE__*/React.createElement("p", {
+    className: "text-slate-300 text-center py-8 text-sm"
+  }, "Tu carrito está vacío 🌭") : cart.map((item, idx) => /*#__PURE__*/React.createElement("div", {
+    key: item.id,
+    className: "card-3d-glass p-4 rounded-2xl space-y-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between items-start border-b border-white/10 pb-2"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-black text-orange-400 uppercase tracking-wider"
+  }, "Orden #", idx + 1, " (3 Banderillas)"), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-3"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "font-black text-orange-400 text-sm"
+  }, "$", item.price, " MXN"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    "aria-label": `Eliminar orden ${idx + 1}`,
+    onClick: () => onRemoveItem(item.id),
+    className: "text-slate-400 hover:text-red-400 text-sm transition font-bold",
+    title: "Eliminar producto"
+  }, "✕"))), /*#__PURE__*/React.createElement("div", {
+    className: "font-bold text-sm text-white"
+  }, item.base), /*#__PURE__*/React.createElement("div", {
+    className: "bg-slate-950/80 p-2.5 rounded-xl border border-white/10 space-y-2 shadow-inner"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-slate-300 font-extrabold uppercase tracking-wider block"
+  }, "Cubiertos de la Orden:"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-3 gap-1.5"
+  }, item.coatings.map((c, cIdx) => /*#__PURE__*/React.createElement("div", {
+    key: cIdx,
+    className: "bg-slate-900/90 p-1.5 rounded-lg border border-slate-700/80 flex flex-col items-center text-center shadow"
+  }, /*#__PURE__*/React.createElement(SafeImage, {
+    src: c.image,
+    alt: c.name,
+    fallbackEmoji: "🌭",
+    className: "w-8 h-8 object-cover rounded-md mb-1 border border-white/10"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-slate-300 font-bold"
+  }, "#", cIdx + 1), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold text-slate-200 truncate w-full"
+  }, c.name))))), /*#__PURE__*/React.createElement("div", {
+    className: "bg-slate-900/60 p-2.5 rounded-xl border border-white/10 space-y-1.5"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-slate-300 font-extrabold uppercase tracking-wider block"
+  }, "Salsas:"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, item.sauces && item.sauces.length > 0 ? item.sauces.map((sauce, sIdx) => /*#__PURE__*/React.createElement("div", {
+    key: sauce.id || sIdx,
+    className: "flex items-center gap-1.5 bg-slate-800/90 px-2 py-1 rounded-lg border border-slate-700 shadow-sm"
+  }, /*#__PURE__*/React.createElement(SafeImage, {
+    src: sauce.image,
+    alt: sauce.name,
+    fallbackEmoji: "🥫",
+    className: "w-4 h-4 rounded-full object-cover"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-slate-200 font-medium"
+  }, sauce.name))) : /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-slate-400 italic"
+  }, "Sin salsas seleccionadas"))), item.drink && /*#__PURE__*/React.createElement("div", {
+    className: "bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/30 flex items-center gap-3"
+  }, /*#__PURE__*/React.createElement(SafeImage, {
+    src: item.drinkImage,
+    alt: item.drink,
+    fallbackEmoji: "🥤",
+    defaultFallbackUrl: PLACEHOLDER_DRINK,
+    className: "w-10 h-10 object-cover rounded-lg border border-amber-400/50 flex-shrink-0 shadow"
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-amber-400 font-extrabold uppercase tracking-wider block"
+  }, "Bebida:"), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold text-white"
+  }, item.drink)))))), cart.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3 bg-slate-950/90 p-4 rounded-2xl border border-white/10 shadow-lg"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-bold text-slate-200 block mb-1.5"
+  }, "Nombre para la entrega ", /*#__PURE__*/React.createElement("span", {
+    className: "text-orange-400"
+  }, "*")), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    placeholder: "Ej. Juan Pérez",
+    value: customerName,
+    onChange: e => setCustomerName(e.target.value),
+    className: `w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 transition-all ${validationErrors.customerName ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20' : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'}`
+  }), validationErrors.customerName && /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] text-red-400 mt-1 block"
+  }, "Este campo es requerido")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-bold text-slate-200 block mb-1.5"
+  }, "Teléfono de Contacto ", /*#__PURE__*/React.createElement("span", {
+    className: "text-orange-400"
+  }, "*")), /*#__PURE__*/React.createElement("input", {
+    type: "tel",
+    placeholder: "Ej. 7441234567",
+    value: customerPhone,
+    onChange: e => setCustomerPhone(e.target.value),
+    className: `w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 transition-all ${validationErrors.customerPhone ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20' : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'}`
+  }), validationErrors.customerPhone && /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] text-red-400 mt-1 block"
+  }, "Ingresa un teléfono válido")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-bold text-slate-200 block mb-1.5"
+  }, "Método de Pago:"), /*#__PURE__*/React.createElement("select", {
+    "aria-label": "Método de pago",
+    value: paymentMethod,
+    onChange: e => setPaymentMethod(e.target.value),
+    className: "w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-orange-500"
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "Efectivo"
+  }, "💵 Efectivo al Entregar"), /*#__PURE__*/React.createElement("option", {
+    value: "Transferencia"
+  }, "📲 Transferencia bancaria"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-bold text-slate-200 block mb-1.5"
+  }, "Tipo de entrega:"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    "aria-label": "Entrega a domicilio",
+    onClick: () => {
+      playSound('click');
+      setDeliveryType('delivery');
+    },
+    className: `py-2 rounded-xl text-xs font-bold transition-all transform active:scale-95 border ${deliveryType === 'delivery' ? 'bg-orange-500 text-white border-orange-400 shadow-lg' : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-600'}`
+  }, "🛵 A Domicilio"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    "aria-label": "Recoger en tienda",
+    onClick: () => {
+      playSound('click');
+      setDeliveryType('pickup');
+    },
+    className: `py-2 rounded-xl text-xs font-bold transition-all transform active:scale-95 border ${deliveryType === 'pickup' ? 'bg-orange-500 text-white border-orange-400 shadow-lg' : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-600'}`
+  }, "🏪 Recoger en Tienda"))), deliveryType === 'delivery' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-bold text-slate-200 block mb-1.5"
+  }, "Dirección de envío ", /*#__PURE__*/React.createElement("span", {
+    className: "text-orange-400"
+  }, "*")), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    placeholder: "Calle, número, colonia...",
+    value: deliveryAddress,
+    onChange: e => setDeliveryAddress(e.target.value),
+    className: `w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 transition-all ${validationErrors.deliveryAddress ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20' : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'}`
+  }), validationErrors.deliveryAddress && /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] text-red-400 mt-1 block"
+  }, "Ingresa tu dirección")))), /*#__PURE__*/React.createElement("div", {
+    className: "flex-shrink-0 pt-3 border-t border-white/10 mt-2 bg-slate-950/90 space-y-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "space-y-1"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between text-xs text-slate-300"
+  }, /*#__PURE__*/React.createElement("span", null, "Subtotal:"), /*#__PURE__*/React.createElement("span", {
+    className: "font-semibold text-white"
+  }, "$", totalCartPrice, " MXN")), deliveryType === 'delivery' && /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between text-xs text-slate-300"
+  }, /*#__PURE__*/React.createElement("span", null, "Envío:"), /*#__PURE__*/React.createElement("span", {
+    className: "text-emerald-400 font-extrabold"
+  }, "¡Gratis!")), /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between font-black text-lg text-white pt-1.5 border-t border-white/10"
+  }, /*#__PURE__*/React.createElement("span", null, "Total Final:"), /*#__PURE__*/React.createElement("span", {
+    className: "text-orange-400"
+  }, "$", totalCartPrice, " MXN"))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-2 gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    "aria-label": "Agregar otra orden al carrito",
+    onClick: onClose,
+    className: "w-full bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 font-bold py-3 rounded-xl transition-all transform shadow-md flex items-center justify-center gap-1.5 text-xs"
+  }, "➕ Pedir otro"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    "aria-label": "Enviar pedido por WhatsApp",
+    onClick: onCheckout,
+    disabled: cart.length === 0 || !storeOpen,
+    className: "w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 disabled:opacity-50 text-white font-extrabold py-3 rounded-xl transition-all transform shadow-xl flex items-center justify-center gap-1.5 text-xs"
+  }, "💬 Enviar pedido")))));
+}
+const initialOrderState = {
+  selectedBase: null,
+  selectedCoatings: [null, null, null],
+  activeCoatingSlot: 0,
+  selectedSauces: [],
+  selectedDrink: null
+};
+function orderReducer(state, action) {
+  switch (action.type) {
+    case 'SET_BASE':
+      return {
+        ...state,
+        selectedBase: action.payload
       };
-
-      if (errorCount >= 2 || !imgSrc) {
-        return (
-          <div className={`${className} bg-slate-800 flex items-center justify-center text-xl select-none border border-slate-700`}>
-            <span>{fallbackEmoji}</span>
-          </div>
-        );
-      }
-
-      return <img src={imgSrc} alt={alt} className={className} onError={handleError} />;
-    }
-
-    function CoatingSelector({ activeSlot, coatings, selectedCoatings, onSelectSlot, onSelectCoating }) {
-      return (
-        <div className="mb-6">
-          <h3 className="text-sm font-bold text-orange-400 mb-2.5 flex items-center gap-1.5">
-            <span className="w-5 h-5 bg-orange-500/20 text-orange-400 rounded-full flex items-center justify-center text-xs border border-orange-500/40">2</span>
-            Elige el Cubierto para cada Banderilla
-          </h3>
-
-          <div className="grid grid-cols-3 gap-2 mb-3">
-            {[0, 1, 2].map((slotIdx) => {
-              const isCurrentSlot = activeSlot === slotIdx;
-              const coatingSelected = selectedCoatings[slotIdx];
-              return (
-                <button
-                  key={slotIdx}
-                  type="button"
-                  aria-label={`Seleccionar banderilla ${slotIdx + 1}`}
-                  onClick={() => onSelectSlot(slotIdx)}
-                  className={`py-2 px-1 rounded-xl text-xs font-bold transition-all duration-300 transform active:scale-95 flex flex-col items-center justify-center border ${isCurrentSlot
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-orange-300 shadow-xl shadow-orange-500/40 -translate-y-1 scale-105 ring-2 ring-orange-400/80 z-10'
-                    : coatingSelected
-                      ? 'card-3d-glass text-orange-300 border-orange-500/40 hover:-translate-y-0.5'
-                      : 'card-3d-glass text-slate-400 hover:border-slate-700 hover:-translate-y-0.5'
-                    }`}
-                >
-                  <span className="text-[10px] opacity-90 uppercase tracking-wider font-extrabold">Banderilla #{slotIdx + 1}</span>
-                  <span className="truncate max-w-full text-xs font-black">
-                    {coatingSelected ? coatingSelected.name : 'Elegir'}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex overflow-x-auto gap-2.5 pb-2 pt-1 no-scrollbar snap-x snap-mandatory">
-            {coatings.map(c => {
-              const isSelectedInCurrentSlot = selectedCoatings[activeSlot]?.id === c.id;
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  aria-label={`Empanizado ${c.name}`}
-                  onClick={() => onSelectCoating(c)}
-                  className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all duration-300 transform active:scale-95 flex-shrink-0 w-36 snap-start card-3d-glass ${isSelectedInCurrentSlot
-                    ? 'border-orange-500 bg-orange-500/30 text-white shadow-xl shadow-orange-500/20 ring-1 ring-orange-500/50 -translate-y-1'
-                    : 'hover:border-slate-600 hover:-translate-y-0.5'
-                    }`}
-                >
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-xs text-slate-200">{c.name}</span>
-                    <span className="text-[10px] text-orange-400 font-bold mt-0.5">{c.badge}</span>
-                  </div>
-                  <span className="text-[10px] font-extrabold text-emerald-400 mt-2">
-                    {isSelectedInCurrentSlot ? '✓ Seleccionado' : 'Asignar a #' + (activeSlot + 1)}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-
-    function PresetList({ presets, onApply }) {
-      return (
-        <div className="mb-6">
-          <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2.5">Recetas Recomendadas</h3>
-          <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar snap-x">
-            {presets.map((preset, idx) => (
-              <button
-                key={idx}
-                type="button"
-                aria-label={`Cargar receta ${preset.name}`}
-                onClick={() => onApply(preset)}
-                className="card-3d-glass hover:bg-slate-800/90 active:scale-95 text-slate-200 border border-white/15 text-xs px-3 py-1.5 rounded-xl transition-all transform font-medium flex items-center gap-1 shadow-md hover:-translate-y-0.5 flex-shrink-0 snap-start"
-              >
-                {preset.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    function CartModal({
-      isOpen,
-      cart,
-      storeOpen,
-      deliveryType,
-      customerName,
-      customerPhone,
-      deliveryAddress,
-      paymentMethod,
-      validationErrors,
-      onClose,
-      onRemoveItem,
-      onCheckout,
-      setCustomerName,
-      setCustomerPhone,
-      setDeliveryAddress,
-      setPaymentMethod,
-      setDeliveryType
-    }) {
-      if (!isOpen) return null;
-
-      const totalCartPrice = cart.reduce((a, b) => a + b.price, 0);
-
-      return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex justify-end z-50 animate-pop">
-          <div className="card-3d-glass w-full max-w-md h-full max-h-screen p-5 flex flex-col justify-between border-l border-white/20 shadow-2xl overflow-hidden">
-
-            <div className="flex-shrink-0 flex justify-between items-center mb-4 border-b border-white/10 pb-3">
-              <div className="flex items-center gap-2">
-                <h3 className="text-xl font-black text-white">Tu Pedido Detallado</h3>
-                <span className="bg-orange-500 text-white font-bold text-xs px-2.5 py-0.5 rounded-full shadow-md">{cart.length}</span>
-              </div>
-              <button type="button" aria-label="Cerrar carrito" onClick={onClose} className="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto pr-1 space-y-4 min-h-0">
-              <div className="card-3d-glass border-amber-500/40 p-3 rounded-2xl flex items-center gap-3">
-                <span className="text-2xl">⏱️</span>
-                <div>
-                  <span className="text-xs font-bold text-amber-400 block uppercase tracking-wide">Tiempo Estimado</span>
-                  <span className="text-sm font-black text-white">
-                    {deliveryType === 'delivery' ? '30 - 45 Minutos 🛵' : '15 - 20 Minutos 🏪'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {cart.length === 0 ? (
-                  <p className="text-slate-300 text-center py-8 text-sm">Tu carrito está vacío 🌭</p>
-                ) : (
-                  cart.map((item, idx) => (
-                    <div key={item.id} className="card-3d-glass p-4 rounded-2xl space-y-3">
-                      <div className="flex justify-between items-start border-b border-white/10 pb-2">
-                        <span className="text-xs font-black text-orange-400 uppercase tracking-wider">Orden #{idx + 1} (3 Banderillas)</span>
-                        <div className="flex items-center gap-3">
-                          <span className="font-black text-orange-400 text-sm">${item.price} MXN</span>
-                          <button
-                            type="button"
-                            aria-label={`Eliminar orden ${idx + 1}`}
-                            onClick={() => onRemoveItem(item.id)}
-                            className="text-slate-400 hover:text-red-400 text-sm transition font-bold"
-                            title="Eliminar producto"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="font-bold text-sm text-white">{item.base}</div>
-
-                      <div className="bg-slate-950/80 p-2.5 rounded-xl border border-white/10 space-y-2 shadow-inner">
-                        <span className="text-xs text-slate-300 font-extrabold uppercase tracking-wider block">Cubiertos de la Orden:</span>
-                        <div className="grid grid-cols-3 gap-1.5">
-                          {item.coatings.map((c, cIdx) => (
-                            <div key={cIdx} className="bg-slate-900/90 p-1.5 rounded-lg border border-slate-700/80 flex flex-col items-center text-center shadow">
-                              <SafeImage
-                                src={c.image}
-                                alt={c.name}
-                                fallbackEmoji="🌭"
-                                className="w-8 h-8 object-cover rounded-md mb-1 border border-white/10"
-                              />
-                              <span className="text-xs text-slate-300 font-bold">#{cIdx + 1}</span>
-                              <span className="text-xs font-bold text-slate-200 truncate w-full">{c.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="bg-slate-900/60 p-2.5 rounded-xl border border-white/10 space-y-1.5">
-                        <span className="text-xs text-slate-300 font-extrabold uppercase tracking-wider block">Salsas:</span>
-                        <div className="flex flex-wrap gap-2">
-                          {item.sauces && item.sauces.length > 0 ? (
-                            item.sauces.map((sauce, sIdx) => (
-                              <div key={sauce.id || sIdx} className="flex items-center gap-1.5 bg-slate-800/90 px-2 py-1 rounded-lg border border-slate-700 shadow-sm">
-                                <SafeImage src={sauce.image} alt={sauce.name} fallbackEmoji="🥫" className="w-4 h-4 rounded-full object-cover" />
-                                <span className="text-xs text-slate-200 font-medium">{sauce.name}</span>
-                              </div>
-                            ))
-                          ) : (
-                            <span className="text-xs text-slate-400 italic">Sin salsas seleccionadas</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {item.drink && (
-                        <div className="bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/30 flex items-center gap-3">
-                          <SafeImage
-                            src={item.drinkImage}
-                            alt={item.drink}
-                            fallbackEmoji="🥤"
-                            defaultFallbackUrl={PLACEHOLDER_DRINK}
-                            className="w-10 h-10 object-cover rounded-lg border border-amber-400/50 flex-shrink-0 shadow"
-                          />
-                          <div>
-                            <span className="text-xs text-amber-400 font-extrabold uppercase tracking-wider block">Bebida:</span>
-                            <span className="text-xs font-bold text-white">{item.drink}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {cart.length > 0 && (
-                <div className="space-y-3 bg-slate-950/90 p-4 rounded-2xl border border-white/10 shadow-lg">
-                  <div>
-                    <label className="text-xs font-bold text-slate-200 block mb-1.5">
-                      Nombre para la entrega <span className="text-orange-400">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ej. Juan Pérez"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className={`w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 transition-all ${validationErrors.customerName
-                        ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20'
-                        : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'
-                        }`}
-                    />
-                    {validationErrors.customerName && <span className="text-[10px] text-red-400 mt-1 block">Este campo es requerido</span>}
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-200 block mb-1.5">
-                      Teléfono de Contacto <span className="text-orange-400">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      placeholder="Ej. 7441234567"
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
-                      className={`w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 transition-all ${validationErrors.customerPhone
-                        ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20'
-                        : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'
-                        }`}
-                    />
-                    {validationErrors.customerPhone && <span className="text-[10px] text-red-400 mt-1 block">Ingresa un teléfono válido</span>}
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-200 block mb-1.5">Método de Pago:</label>
-                    <select
-                      aria-label="Método de pago"
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-orange-500"
-                    >
-                      <option value="Efectivo">💵 Efectivo al Entregar</option>
-                      <option value="Transferencia">📲 Transferencia bancaria</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-200 block mb-1.5">Tipo de entrega:</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        aria-label="Entrega a domicilio"
-                        onClick={() => { playSound('click'); setDeliveryType('delivery'); }}
-                        className={`py-2 rounded-xl text-xs font-bold transition-all transform active:scale-95 border ${deliveryType === 'delivery'
-                          ? 'bg-orange-500 text-white border-orange-400 shadow-lg'
-                          : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-600'
-                          }`}
-                      >
-                        🛵 A Domicilio
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Recoger en tienda"
-                        onClick={() => { playSound('click'); setDeliveryType('pickup'); }}
-                        className={`py-2 rounded-xl text-xs font-bold transition-all transform active:scale-95 border ${deliveryType === 'pickup'
-                          ? 'bg-orange-500 text-white border-orange-400 shadow-lg'
-                          : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-600'
-                          }`}
-                      >
-                        🏪 Recoger en Tienda
-                      </button>
-                    </div>
-                  </div>
-
-                  {deliveryType === 'delivery' && (
-                    <div>
-                      <label className="text-xs font-bold text-slate-200 block mb-1.5">
-                        Dirección de envío <span className="text-orange-400">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Calle, número, colonia..."
-                        value={deliveryAddress}
-                        onChange={(e) => setDeliveryAddress(e.target.value)}
-                        className={`w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 transition-all ${validationErrors.deliveryAddress
-                          ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20'
-                          : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'
-                          }`}
-                      />
-                      {validationErrors.deliveryAddress && <span className="text-[10px] text-red-400 mt-1 block">Ingresa tu dirección</span>}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="flex-shrink-0 pt-3 border-t border-white/10 mt-2 bg-slate-950/90 space-y-3">
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs text-slate-300">
-                  <span>Subtotal:</span>
-                  <span className="font-semibold text-white">${totalCartPrice} MXN</span>
-                </div>
-                {deliveryType === 'delivery' && (
-                  <div className="flex justify-between text-xs text-slate-300">
-                    <span>Envío:</span>
-                    <span className="text-emerald-400 font-extrabold">¡Gratis!</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-black text-lg text-white pt-1.5 border-t border-white/10">
-                  <span>Total Final:</span>
-                  <span className="text-orange-400">${totalCartPrice} MXN</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  aria-label="Agregar otra orden al carrito"
-                  onClick={onClose}
-                  className="w-full bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 font-bold py-3 rounded-xl transition-all transform shadow-md flex items-center justify-center gap-1.5 text-xs"
-                >
-                  ➕ Pedir otro
-                </button>
-
-                <button
-                  type="button"
-                  aria-label="Enviar pedido por WhatsApp"
-                  onClick={onCheckout}
-                  disabled={cart.length === 0 || !storeOpen}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 disabled:opacity-50 text-white font-extrabold py-3 rounded-xl transition-all transform shadow-xl flex items-center justify-center gap-1.5 text-xs"
-                >
-                  💬 Enviar pedido
-                </button>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      );
-    }
-
-    const initialOrderState = {
-      selectedBase: null,
-      selectedCoatings: [null, null, null],
-      activeCoatingSlot: 0,
-      selectedSauces: [],
-      selectedDrink: null,
-    };
-
-    function orderReducer(state, action) {
-      switch (action.type) {
-        case 'SET_BASE':
-          return { ...state, selectedBase: action.payload };
-        case 'SET_COATING_SLOT':
-          return { ...state, activeCoatingSlot: action.payload };
-        case 'SET_COATING': {
-          const updatedCoatings = [...state.selectedCoatings];
-          updatedCoatings[state.activeCoatingSlot] = action.payload;
-          const nextSlot = state.activeCoatingSlot < 2 ? state.activeCoatingSlot + 1 : state.activeCoatingSlot;
-          return { ...state, selectedCoatings: updatedCoatings, activeCoatingSlot: nextSlot };
-        }
-        case 'TOGGLE_SAUCE': {
-          const sauceObj = action.payload;
-          const exists = state.selectedSauces.some(s => s.id === sauceObj.id);
-          if (exists) {
-            return { ...state, selectedSauces: state.selectedSauces.filter(s => s.id !== sauceObj.id) };
-          } else {
-            if (state.selectedSauces.length >= 6) return state;
-            return { ...state, selectedSauces: [...state.selectedSauces, sauceObj] };
-          }
-        }
-        case 'SET_DRINK':
-          return { ...state, selectedDrink: action.payload };
-        case 'APPLY_PRESET': {
-          const { preset, basesList, drinksList } = action.payload;
-          return {
-            selectedBase: basesList.find(b => b.id === preset.baseId) || null,
-            selectedCoatings: [...preset.coatingIds.map(cId => coatings.find(c => c.id === cId) || null)],
-            activeCoatingSlot: 0,
-            selectedSauces: [...preset.sauces],
-            selectedDrink: drinksList.find(d => d.id === preset.drinkId) || null,
-          };
-        }
-        case 'LOAD_FAVORITE': {
-          const fav = action.payload;
-          return {
-            selectedBase: fav.base,
-            selectedCoatings: fav.coatings || [fav.coating, fav.coating, fav.coating],
-            activeCoatingSlot: 0,
-            selectedSauces: fav.sauces,
-            selectedDrink: fav.drink,
-          };
-        }
-        case 'RESET':
-          return initialOrderState;
-        default:
-          return state;
-      }
-    }
-
-    function App() {
-      const [orderState, dispatch] = useReducer(orderReducer, initialOrderState);
-      const { selectedBase, selectedCoatings, activeCoatingSlot, selectedSauces, selectedDrink } = orderState;
-
-      const [favoriteName, setFavoriteName] = useState('');
-      const [savedFavorites, setSavedFavorites] = useState([]);
-      const [cart, setCart] = useState([]);
-      const [isCartOpen, setIsCartOpen] = useState(false);
-      const [toastMessage, setToastMessage] = useState(null);
-
-      const [deliveryType, setDeliveryType] = useState('delivery');
-      const [customerName, setCustomerName] = useState('');
-      const [customerPhone, setCustomerPhone] = useState('');
-      const [deliveryAddress, setDeliveryAddress] = useState('');
-      const [paymentMethod, setPaymentMethod] = useState('Efectivo');
-      const [validationErrors, setValidationErrors] = useState({});
-
-      const [isOpen, setIsOpen] = useState(true);
-      const [animKey, setAnimKey] = useState(0);
-
-      const currentPrice = (selectedBase ? selectedBase.price : 0) + (selectedDrink ? selectedDrink.price : 0);
-      const cartTotalCount = cart.length;
-      const cartTotalPrice = cart.reduce((a, b) => a + b.price, 0);
-
-      useEffect(() => {
-        const checkOpenStatus = () => {
-          const now = new Date();
-          const hour = now.getHours();
-          setIsOpen(hour >= OPEN_HOUR && hour < CLOSE_HOUR);
+    case 'SET_COATING_SLOT':
+      return {
+        ...state,
+        activeCoatingSlot: action.payload
+      };
+    case 'SET_COATING':
+      {
+        const updatedCoatings = [...state.selectedCoatings];
+        updatedCoatings[state.activeCoatingSlot] = action.payload;
+        const nextSlot = state.activeCoatingSlot < 2 ? state.activeCoatingSlot + 1 : state.activeCoatingSlot;
+        return {
+          ...state,
+          selectedCoatings: updatedCoatings,
+          activeCoatingSlot: nextSlot
         };
-        checkOpenStatus();
-        const interval = setInterval(checkOpenStatus, 60000);
-        return () => clearInterval(interval);
-      }, []);
-
-      useEffect(() => {
-        const localFavs = localStorage.getItem('banderilla_favs_pro');
-        if (localFavs) {
-          try { setSavedFavorites(JSON.parse(localFavs)); } catch (e) { }
+      }
+    case 'TOGGLE_SAUCE':
+      {
+        const sauceObj = action.payload;
+        const exists = state.selectedSauces.some(s => s.id === sauceObj.id);
+        if (exists) {
+          return {
+            ...state,
+            selectedSauces: state.selectedSauces.filter(s => s.id !== sauceObj.id)
+          };
+        } else {
+          if (state.selectedSauces.length >= 6) return state;
+          return {
+            ...state,
+            selectedSauces: [...state.selectedSauces, sauceObj]
+          };
         }
-      }, []);
-
-      const triggerAnimation = () => setAnimKey(prev => prev + 1);
-
-      const handleBaseChange = (base) => {
-        playSound('click');
-        dispatch({ type: 'SET_BASE', payload: base });
-        triggerAnimation();
+      }
+    case 'SET_DRINK':
+      return {
+        ...state,
+        selectedDrink: action.payload
       };
+    case 'APPLY_PRESET':
+      {
+        const {
+          preset,
+          basesList,
+          drinksList
+        } = action.payload;
+        return {
+          selectedBase: basesList.find(b => b.id === preset.baseId) || null,
+          selectedCoatings: [...preset.coatingIds.map(cId => coatings.find(c => c.id === cId) || null)],
+          activeCoatingSlot: 0,
+          selectedSauces: [...preset.sauces],
+          selectedDrink: drinksList.find(d => d.id === preset.drinkId) || null
+        };
+      }
+    case 'LOAD_FAVORITE':
+      {
+        const fav = action.payload;
+        return {
+          selectedBase: fav.base,
+          selectedCoatings: fav.coatings || [fav.coating, fav.coating, fav.coating],
+          activeCoatingSlot: 0,
+          selectedSauces: fav.sauces,
+          selectedDrink: fav.drink
+        };
+      }
+    case 'RESET':
+      return initialOrderState;
+    default:
+      return state;
+  }
+}
+function App() {
+  const [orderState, dispatch] = useReducer(orderReducer, initialOrderState);
+  const {
+    selectedBase,
+    selectedCoatings,
+    activeCoatingSlot,
+    selectedSauces,
+    selectedDrink
+  } = orderState;
+  const [favoriteName, setFavoriteName] = useState('');
+  const [savedFavorites, setSavedFavorites] = useState([]);
+  const [cart, setCart] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [deliveryType, setDeliveryType] = useState('delivery');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('Efectivo');
+  const [validationErrors, setValidationErrors] = useState({});
+  const [isOpen, setIsOpen] = useState(true);
+  const [animKey, setAnimKey] = useState(0);
+  const currentPrice = (selectedBase ? selectedBase.price : 0) + (selectedDrink ? selectedDrink.price : 0);
+  const cartTotalCount = cart.length;
+  const cartTotalPrice = cart.reduce((a, b) => a + b.price, 0);
+  useEffect(() => {
+    const checkOpenStatus = () => {
+      const now = new Date();
+      const hour = now.getHours();
+      setIsOpen(hour >= OPEN_HOUR && hour < CLOSE_HOUR);
+    };
+    checkOpenStatus();
+    const interval = setInterval(checkOpenStatus, 60000);
+    return () => clearInterval(interval);
+  }, []);
+  useEffect(() => {
+    const localFavs = localStorage.getItem('banderilla_favs_pro');
+    if (localFavs) {
+      try {
+        setSavedFavorites(JSON.parse(localFavs));
+      } catch (e) {}
+    }
+  }, []);
+  const triggerAnimation = () => setAnimKey(prev => prev + 1);
+  const handleBaseChange = base => {
+    playSound('click');
+    dispatch({
+      type: 'SET_BASE',
+      payload: base
+    });
+    triggerAnimation();
+  };
+  const handleCoatingSelect = coating => {
+    playSound('click');
+    dispatch({
+      type: 'SET_COATING',
+      payload: coating
+    });
+    triggerAnimation();
+  };
+  const handleCoatingSlotSelect = slotIdx => {
+    playSound('click');
+    dispatch({
+      type: 'SET_COATING_SLOT',
+      payload: slotIdx
+    });
+  };
+  const showToast = msg => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+  const toggleSauce = sauceObj => {
+    playSound('click');
+    const exists = selectedSauces.some(s => s.id === sauceObj.id);
+    if (!exists && selectedSauces.length >= 6) {
+      showToast("Máximo 6 complementos por orden");
+      return;
+    }
+    dispatch({
+      type: 'TOGGLE_SAUCE',
+      payload: sauceObj
+    });
+  };
+  const applyPreset = preset => {
+    playSound('click');
+    dispatch({
+      type: 'APPLY_PRESET',
+      payload: {
+        preset,
+        basesList: bases,
+        drinksList: drinks
+      }
+    });
+    triggerAnimation();
+    showToast(`Preset "${preset.name}" cargado`);
+  };
+  const saveFavorite = () => {
+    if (!selectedBase || selectedCoatings.some(c => c === null)) {
+      showToast('⚠️ Selecciona tipo de orden y los 3 cubiertos para guardar');
+      return;
+    }
+    if (!favoriteName.trim()) return;
+    playSound('click');
+    const newFav = {
+      id: Date.now(),
+      name: favoriteName,
+      base: selectedBase,
+      coatings: selectedCoatings,
+      sauces: selectedSauces,
+      drink: selectedDrink
+    };
+    const updated = [...savedFavorites, newFav];
+    setSavedFavorites(updated);
+    localStorage.setItem('banderilla_favs_pro', JSON.stringify(updated));
+    setFavoriteName('');
+    showToast('★ ¡Guardado en tus Favoritos!');
+  };
+  const loadFavorite = fav => {
+    playSound('click');
+    dispatch({
+      type: 'LOAD_FAVORITE',
+      payload: fav
+    });
+    triggerAnimation();
+    showToast(`Favorito "${fav.name}" cargado`);
+  };
+  const resetSelections = () => {
+    playSound('click');
+    dispatch({
+      type: 'RESET'
+    });
+    triggerAnimation();
+  };
+  const addToCart = () => {
+    if (!isOpen) {
+      showToast('⛔ El local está cerrado actualmente');
+      return;
+    }
+    if (!selectedBase) {
+      showToast('⚠️ Selecciona el tipo de orden');
+      return;
+    }
+    if (selectedCoatings.some(c => c === null)) {
+      showToast('⚠️ Selecciona el cubierto para las 3 banderillas');
+      return;
+    }
+    playSound('add');
+    const item = {
+      id: Date.now(),
+      base: selectedBase.name,
+      coatings: selectedCoatings,
+      sauces: [...selectedSauces],
+      drink: selectedDrink ? selectedDrink.name : null,
+      drinkImage: selectedDrink ? selectedDrink.image : null,
+      price: currentPrice
+    };
+    setCart([...cart, item]);
+    setIsCartOpen(true);
+    dispatch({
+      type: 'RESET'
+    });
+    triggerAnimation();
+    showToast('🛒 ¡Orden agregada! Armador reiniciado.');
+  };
+  const removeFromCart = id => {
+    if (window.confirm("¿Estás seguro de que deseas eliminar este producto de la orden?")) {
+      playSound('click');
+      setCart(cart.filter(item => item.id !== id));
+      showToast('🗑️ Producto eliminado del carrito');
+    }
+  };
+  const checkoutWhatsApp = async () => {
+    if (cart.length === 0 || !isOpen) return;
+    const errors = {};
+    if (!customerName.trim()) errors.customerName = true;
+    if (!customerPhone.trim() || customerPhone.length < 8) errors.customerPhone = true;
+    if (deliveryType === 'delivery' && !deliveryAddress.trim()) errors.deliveryAddress = true;
+    setValidationErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      showToast('⚠️ Revisa los campos requeridos marcados en rojo');
+      return;
+    }
+    playSound('success');
 
-      const handleCoatingSelect = (coating) => {
-        playSound('click');
-        dispatch({ type: 'SET_COATING', payload: coating });
-        triggerAnimation();
-      };
+    // Obtener un número de pedido secuencial de forma atómica (contador/pedidos en Firebase)
+    let orderNumber = null;
+    try {
+      if (window.db && window.ref && window.runTransaction) {
+        const counterRef = window.ref(window.db, 'contador/pedidos');
+        const result = await window.runTransaction(counterRef, current => (current || 0) + 1);
+        orderNumber = result && result.committed ? result.snapshot.val() : null;
+      }
+    } catch (e) {
+      orderNumber = null; // si falla, se usa el respaldo con los últimos dígitos del timestamp
+    }
+    const newOrderRecord = {
+      id: Date.now(),
+      orderNumber: orderNumber,
+      customer: customerName.trim(),
+      phone: customerPhone.trim(),
+      deliveryType,
+      address: deliveryAddress.trim(),
+      paymentMethod,
+      cart,
+      total: cart.reduce((a, b) => a + b.price, 0),
+      status: 'pending',
+      timestamp: new Date().toISOString()
+    };
 
-      const handleCoatingSlotSelect = (slotIdx) => {
-        playSound('click');
-        dispatch({ type: 'SET_COATING_SLOT', payload: slotIdx });
-      };
+    // Guardar directamente en Firebase Realtime Database
+    let newOrderRef = null;
+    if (window.db && window.ref && window.push) {
+      const ordersRef = window.ref(window.db, 'pedidos');
+      newOrderRef = window.push(ordersRef, newOrderRecord);
+    }
+    const displayNumber = orderNumber ? orderNumber : newOrderRecord.id.toString().slice(-4);
+    let message = "🌭 *¡NUEVO PEDIDO BANDERILLAS COREANAS!* 🌭\n";
+    message += `🔖 *Pedido #${displayNumber}*\n`;
+    message += "📌 *TODAS LAS ÓRDENES INCLUYEN 3 BANDERILLAS*\n\n";
+    message += `👤 *Cliente:* ${customerName.trim()}\n`;
+    message += `📞 *Teléfono:* ${customerPhone.trim()}\n`;
+    message += `💳 *Método de Pago:* ${paymentMethod}\n`;
+    message += `📍 *Modalidad:* ${deliveryType === 'delivery' ? 'Envío a Domicilio 🛵' : 'Recoger en Sucursal 🏪'}\n`;
+    message += `⏱️ *Tiempo Estimado:* ${deliveryType === 'delivery' ? '30-45 min' : '15-20 min'}\n`;
+    if (deliveryType === 'delivery' && deliveryAddress.trim()) {
+      message += `🏠 *Dirección:* ${deliveryAddress.trim()}\n`;
+    }
+    message += `\n`;
+    cart.forEach((item, index) => {
+      message += `*Orden #${index + 1}:*\n`;
+      message += `• Selección: ${item.base}\n`;
+      message += `• Cubiertos de la Orden:\n`;
+      item.coatings.forEach((c, i) => {
+        message += `   - Banderilla ${i + 1}: ${c.name}\n`;
+      });
+      const saucesText = item.sauces.length > 0 ? item.sauces.map(s => s.name).join(', ') : 'Sin salsas ni extras';
+      message += `• Extras/Salsas: ${saucesText}\n`;
+      if (item.drink) message += `• Bebida: ${item.drink}\n`;
+      message += `• Precio: $${item.price} MXN\n\n`;
+    });
+    const total = cart.reduce((a, b) => a + b.price, 0);
+    message += `🛵 *Envío:* ${deliveryType === 'delivery' ? 'GRATIS' : 'N/A'}\n`;
+    message += `💰 *TOTAL A PAGAR: $${total} MXN*\n\n`;
+    message += "Por favor confirmen mi pedido para realizar el pago. ¡Muchas gracias! 🔥🧀🌭";
+    const url = `https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(message)}`;
+    const waWindow = window.open(url, '_blank');
 
-      const showToast = (msg) => {
-        setToastMessage(msg);
-        setTimeout(() => setToastMessage(null), 3000);
-      };
-
-      const toggleSauce = (sauceObj) => {
-        playSound('click');
-        const exists = selectedSauces.some(s => s.id === sauceObj.id);
-        if (!exists && selectedSauces.length >= 6) {
-          showToast("Máximo 6 complementos por orden");
-          return;
-        }
-        dispatch({ type: 'TOGGLE_SAUCE', payload: sauceObj });
-      };
-
-      const applyPreset = (preset) => {
+    // Si el navegador bloqueó la ventana de WhatsApp, el pedido quedó guardado
+    // pero es posible que el cliente nunca haya enviado el mensaje. Lo marcamos
+    // para que en el panel de administración se muestre una alerta.
+    if (!waWindow && newOrderRef && window.db && window.ref && window.update) {
+      window.update(window.ref(window.db, `pedidos/${newOrderRef.key}`), {
+        popupBlocked: true
+      });
+    }
+    setCart([]);
+    setCustomerName('');
+    setCustomerPhone('');
+    setDeliveryAddress('');
+    setValidationErrors({});
+    setIsCartOpen(false);
+    showToast('✅ ¡Pedido enviado con éxito!');
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "min-h-screen flex flex-col md:flex-row relative"
+  }, toastMessage && /*#__PURE__*/React.createElement("div", {
+    className: "fixed top-5 right-5 z-50 bg-orange-500 text-white font-bold px-4 py-3 rounded-xl shadow-2xl border border-orange-300 animate-bounce"
+  }, toastMessage), cartTotalCount > 0 && !isCartOpen && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    "aria-label": "Abrir carrito",
+    onClick: () => {
+      playSound('click');
+      setIsCartOpen(true);
+    },
+    className: "fixed bottom-20 md:bottom-6 right-6 z-40 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold px-5 py-3.5 rounded-full shadow-2xl transition-all transform hover:scale-105 active:scale-95 flex items-center gap-3 border-t border-l border-white/40"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "relative"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xl"
+  }, "🛒"), /*#__PURE__*/React.createElement("span", {
+    className: "absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border border-white shadow"
+  }, cartTotalCount)), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col text-left"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] uppercase font-bold text-orange-100"
+  }, "Ver Carrito"), /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-black"
+  }, "$", cartTotalPrice, " MXN"))), /*#__PURE__*/React.createElement("div", {
+    className: "w-full md:w-1/2 min-h-[340px] max-h-[45vh] md:max-h-none md:min-h-[520px] md:h-screen sticky top-0 md:relative z-30 bg-slate-900/90 backdrop-blur-xl flex flex-col items-center justify-center p-4 md:p-12 overflow-y-auto md:overflow-hidden border-b md:border-b-0 md:border-r border-white/10 shadow-xl md:shadow-none",
+    style: {
+      perspective: '1000px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "absolute w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-3xl glow-effect pointer-events-none"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "relative w-full h-full flex flex-col items-center justify-center gap-4 md:gap-6 z-10 my-auto max-w-xl"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-3d-glass px-8 py-4 rounded-3xl border border-white/20 shadow-2xl flex flex-col items-center justify-center text-center gap-2 w-full max-w-md"
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "text-xl md:text-2xl font-black text-amber-500 tracking-wide drop-shadow"
+  }, "Banderillas Coreanas"), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-center"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: `inline-flex items-center justify-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border ${isOpen ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/40 shadow-sm' : 'bg-rose-950/80 text-rose-400 border-rose-500/40 shadow-sm'}`
+  }, /*#__PURE__*/React.createElement("span", {
+    className: `w-2 h-2 rounded-full ${isOpen ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`
+  }), isOpen ? 'Abierto Ahora' : 'Local Cerrado')), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-slate-300 font-medium tracking-wide"
+  }, "Horario: 1:00 PM - 8:00 PM")), /*#__PURE__*/React.createElement("div", {
+    className: "relative flex justify-center items-center w-full min-h-[180px] md:min-h-[280px]"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-3 gap-2 md:gap-4 w-full max-w-md"
+  }, selectedCoatings.map((c, idx) => {
+    const isEditing = activeCoatingSlot === idx;
+    return /*#__PURE__*/React.createElement("div", {
+      key: idx,
+      onClick: () => handleCoatingSlotSelect(idx),
+      className: `relative flex flex-col items-center justify-center p-2 rounded-2xl border-2 transition-all cursor-pointer transform card-3d-interactive ${isEditing ? 'border-orange-500 bg-orange-500/20 shadow-2xl shadow-orange-500/30 scale-105 z-10 -translate-y-2' : 'card-3d-glass border-white/10 hover:border-slate-600'}`
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-1 mb-1"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "text-xs font-extrabold text-orange-400"
+    }, "#", idx + 1), isEditing && /*#__PURE__*/React.createElement("span", {
+      className: "bg-orange-500 text-[9px] font-black text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse shadow"
+    }, "Editando")), c ? /*#__PURE__*/React.createElement("div", {
+      key: `${idx}-${animKey}`,
+      className: "animate-pop w-full flex flex-col items-center relative"
+    }, c.badge && /*#__PURE__*/React.createElement("span", {
+      className: "absolute top-1 right-1 z-20 bg-amber-400/95 backdrop-blur-md text-slate-950 text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-lg border border-amber-200"
+    }, c.badge), /*#__PURE__*/React.createElement(SafeImage, {
+      src: c.image,
+      alt: c.name,
+      fallbackEmoji: "🌭",
+      className: "h-24 md:h-40 w-full object-cover rounded-xl shadow-lg border-t border-l border-white/20"
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "text-xs font-bold text-center mt-1.5 truncate w-full text-slate-100"
+    }, c.name)) : /*#__PURE__*/React.createElement("div", {
+      className: "h-24 md:h-40 w-full border-2 border-dashed border-slate-700/80 rounded-xl flex flex-col items-center justify-center text-center p-1 text-slate-400"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "text-xl md:text-3xl mb-1"
+    }, "🌭"), /*#__PURE__*/React.createElement("span", {
+      className: "text-xs font-semibold text-slate-300"
+    }, "Elige Cubierto")));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "w-full flex flex-wrap items-center justify-center gap-2 md:gap-3 z-20 pt-1 md:pt-2"
+  }, selectedBase ? /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 card-3d-glass border-orange-500/60 px-3 py-1 md:px-4 md:py-1.5 rounded-xl md:rounded-2xl shadow-xl"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-sm md:text-base"
+  }, selectedBase.icon), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col text-left"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-orange-400 font-extrabold uppercase tracking-wider"
+  }, "Orden Seleccionada"), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold text-white"
+  }, selectedBase.name))) : /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-slate-300 card-3d-glass px-2.5 py-1 md:px-3 md:py-1.5 rounded-xl border-slate-700"
+  }, "Sin Selección Base"), selectedSauces.map(sObj => /*#__PURE__*/React.createElement("div", {
+    key: sObj.id,
+    className: "flex items-center gap-1.5 md:gap-2 card-3d-glass px-3 py-1 md:px-4 md:py-2 rounded-xl md:rounded-2xl shadow-xl"
+  }, /*#__PURE__*/React.createElement(SafeImage, {
+    src: sObj.image,
+    alt: sObj.name,
+    fallbackEmoji: "🥫",
+    className: "w-5 h-5 md:w-6 md:h-6 rounded-full object-cover border border-slate-600 shadow"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold"
+  }, sObj.name))), selectedDrink && /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 card-3d-glass border-amber-500/60 px-3 py-1 md:px-4 md:py-1.5 rounded-xl md:rounded-2xl shadow-2xl"
+  }, /*#__PURE__*/React.createElement(SafeImage, {
+    src: selectedDrink.image,
+    alt: selectedDrink.name,
+    fallbackEmoji: "🥤",
+    defaultFallbackUrl: PLACEHOLDER_DRINK,
+    className: "w-6 h-6 md:w-8 md:h-8 rounded-lg object-cover border border-amber-400/80 shadow"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col text-left"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-amber-400 font-extrabold uppercase tracking-wider"
+  }, "Bebida (+$", selectedDrink.price, " MXN)"), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold text-white"
+  }, selectedDrink.name)))))), /*#__PURE__*/React.createElement("div", {
+    className: "w-full md:w-1/2 p-6 md:p-10 pb-28 md:pb-10 overflow-y-auto md:max-h-screen bg-slate-950 flex flex-col justify-between"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between items-center mb-4 pb-2 border-b border-slate-800"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-extrabold text-slate-400 uppercase tracking-wider"
+  }, "Personaliza tu Pedido"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    "aria-label": "Reiniciar selección actual",
+    onClick: resetSelections,
+    className: "text-xs text-slate-400 hover:text-orange-400 transition font-medium flex items-center gap-1 card-3d-glass border border-slate-800 px-2.5 py-1 rounded-lg hover:-translate-y-0.5"
+  }, "🔄 Reiniciar selección")), /*#__PURE__*/React.createElement(PresetList, {
+    presets: chefPresets,
+    onApply: applyPreset
+  }), savedFavorites.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mb-6 card-3d-glass p-3.5 rounded-2xl border border-white/10"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-xs font-bold text-orange-400 uppercase tracking-wider mb-2"
+  }, "Mis Combinaciones Guardadas"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, savedFavorites.map(fav => /*#__PURE__*/React.createElement("button", {
+    key: fav.id,
+    type: "button",
+    "aria-label": `Cargar favorito ${fav.name}`,
+    onClick: () => loadFavorite(fav),
+    className: "bg-orange-500/20 text-orange-300 border border-orange-500/40 text-xs px-3 py-1.5 rounded-xl hover:bg-orange-500/30 transition-all transform active:scale-95 font-semibold shadow-sm hover:-translate-y-0.5"
+  }, "★ ", fav.name)))), /*#__PURE__*/React.createElement("div", {
+    className: "mb-6"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between items-center mb-1.5"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-sm font-bold text-orange-400 flex items-center gap-1.5"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "w-5 h-5 bg-orange-500/20 text-orange-400 rounded-full flex items-center justify-center text-xs border border-orange-500/40"
+  }, "1"), "Elige tu Orden (Incluye 3 Banderillas)")), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 gap-2"
+  }, bases.map(b => {
+    const isSelected = selectedBase?.id === b.id;
+    return /*#__PURE__*/React.createElement("button", {
+      key: b.id,
+      type: "button",
+      "aria-label": `Seleccionar base ${b.name}`,
+      onClick: () => handleBaseChange(b),
+      className: `p-3.5 rounded-xl border text-left flex justify-between items-center transition-all transform active:scale-95 card-3d-glass ${isSelected ? 'border-orange-500 bg-orange-500/20 text-white shadow-xl shadow-orange-500/10 font-semibold ring-1 ring-orange-500/40 -translate-y-0.5' : 'hover:border-slate-700 hover:-translate-y-0.5'}`
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2"
+    }, /*#__PURE__*/React.createElement("span", null, b.icon), /*#__PURE__*/React.createElement("span", {
+      className: "font-medium text-sm"
+    }, b.name), b.badge && /*#__PURE__*/React.createElement("span", {
+      className: "bg-orange-500/30 text-orange-300 text-[11px] font-bold px-2 py-0.5 rounded-full border border-orange-500/40 shadow-sm"
+    }, b.badge)), /*#__PURE__*/React.createElement("span", {
+      className: "font-extrabold text-orange-400 text-sm"
+    }, "$", b.price, " MXN"));
+  }))), /*#__PURE__*/React.createElement(CoatingSelector, {
+    activeSlot: activeCoatingSlot,
+    coatings: coatings,
+    selectedCoatings: selectedCoatings,
+    onSelectSlot: handleCoatingSlotSelect,
+    onSelectCoating: handleCoatingSelect
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "mb-6"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between items-center mb-2.5"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-sm font-bold text-orange-400 flex items-center gap-1.5"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "w-5 h-5 bg-orange-500/20 text-orange-400 rounded-full flex items-center justify-center text-xs border border-orange-500/40"
+  }, "3"), "Salsas y Extras"), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-slate-300"
+  }, "(Elegidos: ", selectedSauces.length, ")")), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 md:grid-cols-3 gap-2.5"
+  }, availableSauces.map(s => {
+    const active = selectedSauces.some(item => item.id === s.id);
+    return /*#__PURE__*/React.createElement("button", {
+      key: s.id,
+      type: "button",
+      "aria-label": `Seleccionar salsa ${s.name}`,
+      onClick: () => toggleSauce(s),
+      className: `p-2 rounded-xl border flex items-center gap-2.5 transition-all transform active:scale-95 card-3d-glass ${active ? 'border-orange-500 bg-orange-500/30 text-white font-bold shadow-lg ring-1 ring-orange-500/40 -translate-y-0.5' : 'hover:border-slate-700 hover:-translate-y-0.5'}`
+    }, /*#__PURE__*/React.createElement(SafeImage, {
+      src: s.image,
+      alt: s.name,
+      fallbackEmoji: "🥫",
+      className: "w-8 h-8 rounded-lg object-cover border border-slate-700 flex-shrink-0 shadow"
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "text-xs font-medium truncate"
+    }, active ? '✓ ' : '', s.name));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "mb-6"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-sm font-bold text-orange-400 mb-2.5 flex items-center gap-1.5"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "w-5 h-5 bg-orange-500/20 text-orange-400 rounded-full flex items-center justify-center text-xs border border-orange-500/40"
+  }, "4"), "Bebida Opcional"), /*#__PURE__*/React.createElement("div", {
+    className: "flex overflow-x-auto gap-2.5 pb-2 pt-1 no-scrollbar snap-x snap-mandatory"
+  }, drinks.map(d => {
+    const isSelected = selectedDrink?.id === d.id;
+    return /*#__PURE__*/React.createElement("button", {
+      key: d.id,
+      type: "button",
+      "aria-label": `Seleccionar bebida ${d.name}`,
+      onClick: () => {
         playSound('click');
         dispatch({
-          type: 'APPLY_PRESET',
-          payload: { preset, basesList: bases, drinksList: drinks }
+          type: 'SET_DRINK',
+          payload: isSelected ? null : d
         });
-        triggerAnimation();
-        showToast(`Preset "${preset.name}" cargado`);
-      };
-
-      const saveFavorite = () => {
-        if (!selectedBase || selectedCoatings.some(c => c === null)) {
-          showToast('⚠️ Selecciona tipo de orden y los 3 cubiertos para guardar');
-          return;
-        }
-        if (!favoriteName.trim()) return;
-        playSound('click');
-        const newFav = {
-          id: Date.now(),
-          name: favoriteName,
-          base: selectedBase,
-          coatings: selectedCoatings,
-          sauces: selectedSauces,
-          drink: selectedDrink
-        };
-        const updated = [...savedFavorites, newFav];
-        setSavedFavorites(updated);
-        localStorage.setItem('banderilla_favs_pro', JSON.stringify(updated));
-        setFavoriteName('');
-        showToast('★ ¡Guardado en tus Favoritos!');
-      };
-
-      const loadFavorite = (fav) => {
-        playSound('click');
-        dispatch({ type: 'LOAD_FAVORITE', payload: fav });
-        triggerAnimation();
-        showToast(`Favorito "${fav.name}" cargado`);
-      };
-
-      const resetSelections = () => {
-        playSound('click');
-        dispatch({ type: 'RESET' });
-        triggerAnimation();
-      };
-
-      const addToCart = () => {
-        if (!isOpen) {
-          showToast('⛔ El local está cerrado actualmente');
-          return;
-        }
-        if (!selectedBase) {
-          showToast('⚠️ Selecciona el tipo de orden');
-          return;
-        }
-        if (selectedCoatings.some(c => c === null)) {
-          showToast('⚠️ Selecciona el cubierto para las 3 banderillas');
-          return;
-        }
-
-        playSound('add');
-        const item = {
-          id: Date.now(),
-          base: selectedBase.name,
-          coatings: selectedCoatings,
-          sauces: [...selectedSauces],
-          drink: selectedDrink ? selectedDrink.name : null,
-          drinkImage: selectedDrink ? selectedDrink.image : null,
-          price: currentPrice
-        };
-        setCart([...cart, item]);
-        setIsCartOpen(true);
-
-        dispatch({ type: 'RESET' });
-        triggerAnimation();
-        showToast('🛒 ¡Orden agregada! Armador reiniciado.');
-      };
-
-      const removeFromCart = (id) => {
-        if (window.confirm("¿Estás seguro de que deseas eliminar este producto de la orden?")) {
-          playSound('click');
-          setCart(cart.filter(item => item.id !== id));
-          showToast('🗑️ Producto eliminado del carrito');
-        }
-      };
-
-      const checkoutWhatsApp = async () => {
-        if (cart.length === 0 || !isOpen) return;
-
-        const errors = {};
-        if (!customerName.trim()) errors.customerName = true;
-        if (!customerPhone.trim() || customerPhone.length < 8) errors.customerPhone = true;
-        if (deliveryType === 'delivery' && !deliveryAddress.trim()) errors.deliveryAddress = true;
-
-        setValidationErrors(errors);
-
-        if (Object.keys(errors).length > 0) {
-          showToast('⚠️ Revisa los campos requeridos marcados en rojo');
-          return;
-        }
-
-        playSound('success');
-
-        // Obtener un número de pedido secuencial de forma atómica (contador/pedidos en Firebase)
-        let orderNumber = null;
-        try {
-          if (window.db && window.ref && window.runTransaction) {
-            const counterRef = window.ref(window.db, 'contador/pedidos');
-            const result = await window.runTransaction(counterRef, (current) => (current || 0) + 1);
-            orderNumber = result && result.committed ? result.snapshot.val() : null;
-          }
-        } catch (e) {
-          orderNumber = null; // si falla, se usa el respaldo con los últimos dígitos del timestamp
-        }
-
-        const newOrderRecord = {
-          id: Date.now(),
-          orderNumber: orderNumber,
-          customer: customerName.trim(),
-          phone: customerPhone.trim(),
-          deliveryType,
-          address: deliveryAddress.trim(),
-          paymentMethod,
-          cart,
-          total: cart.reduce((a, b) => a + b.price, 0),
-          status: 'pending',
-          timestamp: new Date().toISOString()
-        };
-
-        // Guardar directamente en Firebase Realtime Database
-        let newOrderRef = null;
-        if (window.db && window.ref && window.push) {
-          const ordersRef = window.ref(window.db, 'pedidos');
-          newOrderRef = window.push(ordersRef, newOrderRecord);
-        }
-
-        const displayNumber = orderNumber ? orderNumber : newOrderRecord.id.toString().slice(-4);
-
-        let message = "🌭 *¡NUEVO PEDIDO BANDERILLAS COREANAS!* 🌭\n";
-        message += `🔖 *Pedido #${displayNumber}*\n`;
-        message += "📌 *TODAS LAS ÓRDENES INCLUYEN 3 BANDERILLAS*\n\n";
-        message += `👤 *Cliente:* ${customerName.trim()}\n`;
-        message += `📞 *Teléfono:* ${customerPhone.trim()}\n`;
-        message += `💳 *Método de Pago:* ${paymentMethod}\n`;
-        message += `📍 *Modalidad:* ${deliveryType === 'delivery' ? 'Envío a Domicilio 🛵' : 'Recoger en Sucursal 🏪'}\n`;
-        message += `⏱️ *Tiempo Estimado:* ${deliveryType === 'delivery' ? '30-45 min' : '15-20 min'}\n`;
-        if (deliveryType === 'delivery' && deliveryAddress.trim()) {
-          message += `🏠 *Dirección:* ${deliveryAddress.trim()}\n`;
-        }
-        message += `\n`;
-
-        cart.forEach((item, index) => {
-          message += `*Orden #${index + 1}:*\n`;
-          message += `• Selección: ${item.base}\n`;
-          message += `• Cubiertos de la Orden:\n`;
-          item.coatings.forEach((c, i) => {
-            message += `   - Banderilla ${i + 1}: ${c.name}\n`;
-          });
-          
-          const saucesText = item.sauces.length > 0 
-            ? item.sauces.map(s => s.name).join(', ') 
-            : 'Sin salsas ni extras';
-            
-          message += `• Extras/Salsas: ${saucesText}\n`;
-          if (item.drink) message += `• Bebida: ${item.drink}\n`;
-          message += `• Precio: $${item.price} MXN\n\n`;
-        });
-
-        const total = cart.reduce((a, b) => a + b.price, 0);
-
-        message += `🛵 *Envío:* ${deliveryType === 'delivery' ? 'GRATIS' : 'N/A'}\n`;
-        message += `💰 *TOTAL A PAGAR: $${total} MXN*\n\n`;
-        message += "Por favor confirmen mi pedido para realizar el pago. ¡Muchas gracias! 🔥🧀🌭";
-
-        const url = `https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(message)}`;
-        const waWindow = window.open(url, '_blank');
-
-        // Si el navegador bloqueó la ventana de WhatsApp, el pedido quedó guardado
-        // pero es posible que el cliente nunca haya enviado el mensaje. Lo marcamos
-        // para que en el panel de administración se muestre una alerta.
-        if (!waWindow && newOrderRef && window.db && window.ref && window.update) {
-          window.update(window.ref(window.db, `pedidos/${newOrderRef.key}`), { popupBlocked: true });
-        }
-
-        setCart([]);
-        setCustomerName('');
-        setCustomerPhone('');
-        setDeliveryAddress('');
-        setValidationErrors({});
-        setIsCartOpen(false);
-        showToast('✅ ¡Pedido enviado con éxito!');
-      };
-
-      return (
-        <div className="min-h-screen flex flex-col md:flex-row relative">
-
-          {toastMessage && (
-            <div className="fixed top-5 right-5 z-50 bg-orange-500 text-white font-bold px-4 py-3 rounded-xl shadow-2xl border border-orange-300 animate-bounce">
-              {toastMessage}
-            </div>
-          )}
-
-          {cartTotalCount > 0 && !isCartOpen && (
-            <button
-              type="button"
-              aria-label="Abrir carrito"
-              onClick={() => { playSound('click'); setIsCartOpen(true); }}
-              className="fixed bottom-20 md:bottom-6 right-6 z-40 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold px-5 py-3.5 rounded-full shadow-2xl transition-all transform hover:scale-105 active:scale-95 flex items-center gap-3 border-t border-l border-white/40"
-            >
-              <div className="relative">
-                <span className="text-xl">🛒</span>
-                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border border-white shadow">
-                  {cartTotalCount}
-                </span>
-              </div>
-              <div className="flex flex-col text-left">
-                <span className="text-[10px] uppercase font-bold text-orange-100">Ver Carrito</span>
-                <span className="text-sm font-black">${cartTotalPrice} MXN</span>
-              </div>
-            </button>
-          )}
-
-          <div className="w-full md:w-1/2 min-h-[340px] max-h-[45vh] md:max-h-none md:min-h-[520px] md:h-screen sticky top-0 md:relative z-30 bg-slate-900/90 backdrop-blur-xl flex flex-col items-center justify-center p-4 md:p-12 overflow-y-auto md:overflow-hidden border-b md:border-b-0 md:border-r border-white/10 shadow-xl md:shadow-none" style={{ perspective: '1000px' }}>
-            <div className="absolute w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-3xl glow-effect pointer-events-none"></div>
-
-            <div className="relative w-full h-full flex flex-col items-center justify-center gap-4 md:gap-6 z-10 my-auto max-w-xl">
-              <div className="card-3d-glass px-8 py-4 rounded-3xl border border-white/20 shadow-2xl flex flex-col items-center justify-center text-center gap-2 w-full max-w-md">
-                <h1 className="text-xl md:text-2xl font-black text-amber-500 tracking-wide drop-shadow">
-                  Banderillas Coreanas
-                </h1>
-
-                <div className="flex items-center justify-center">
-                  <span className={`inline-flex items-center justify-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border ${isOpen
-                    ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/40 shadow-sm'
-                    : 'bg-rose-950/80 text-rose-400 border-rose-500/40 shadow-sm'
-                    }`}>
-                    <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`}></span>
-                    {isOpen ? 'Abierto Ahora' : 'Local Cerrado'}
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-300 font-medium tracking-wide">
-                  Horario: 1:00 PM - 8:00 PM
-                </p>
-              </div>
-
-              <div className="relative flex justify-center items-center w-full min-h-[180px] md:min-h-[280px]">
-                <div className="grid grid-cols-3 gap-2 md:gap-4 w-full max-w-md">
-                  {selectedCoatings.map((c, idx) => {
-                    const isEditing = activeCoatingSlot === idx;
-                    return (
-                      <div
-                        key={idx}
-                        onClick={() => handleCoatingSlotSelect(idx)}
-                        className={`relative flex flex-col items-center justify-center p-2 rounded-2xl border-2 transition-all cursor-pointer transform card-3d-interactive ${isEditing
-                          ? 'border-orange-500 bg-orange-500/20 shadow-2xl shadow-orange-500/30 scale-105 z-10 -translate-y-2'
-                          : 'card-3d-glass border-white/10 hover:border-slate-600'
-                          }`}
-                      >
-                        <div className="flex items-center gap-1 mb-1">
-                          <span className="text-xs font-extrabold text-orange-400">
-                            #{idx + 1}
-                          </span>
-                          {isEditing && (
-                            <span className="bg-orange-500 text-[9px] font-black text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse shadow">
-                              Editando
-                            </span>
-                          )}
-                        </div>
-
-                        {c ? (
-                          <div key={`${idx}-${animKey}`} className="animate-pop w-full flex flex-col items-center relative">
-                            {c.badge && (
-                              <span className="absolute top-1 right-1 z-20 bg-amber-400/95 backdrop-blur-md text-slate-950 text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-lg border border-amber-200">
-                                {c.badge}
-                              </span>
-                            )}
-
-                            <SafeImage
-                              src={c.image}
-                              alt={c.name}
-                              fallbackEmoji="🌭"
-                              className="h-24 md:h-40 w-full object-cover rounded-xl shadow-lg border-t border-l border-white/20"
-                            />
-                            <span className="text-xs font-bold text-center mt-1.5 truncate w-full text-slate-100">
-                              {c.name}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="h-24 md:h-40 w-full border-2 border-dashed border-slate-700/80 rounded-xl flex flex-col items-center justify-center text-center p-1 text-slate-400">
-                            <span className="text-xl md:text-3xl mb-1">🌭</span>
-                            <span className="text-xs font-semibold text-slate-300">Elige Cubierto</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="w-full flex flex-wrap items-center justify-center gap-2 md:gap-3 z-20 pt-1 md:pt-2">
-                {selectedBase ? (
-                  <div className="flex items-center gap-2 card-3d-glass border-orange-500/60 px-3 py-1 md:px-4 md:py-1.5 rounded-xl md:rounded-2xl shadow-xl">
-                    <span className="text-sm md:text-base">{selectedBase.icon}</span>
-                    <div className="flex flex-col text-left">
-                      <span className="text-xs text-orange-400 font-extrabold uppercase tracking-wider">Orden Seleccionada</span>
-                      <span className="text-xs font-bold text-white">{selectedBase.name}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <span className="text-xs text-slate-300 card-3d-glass px-2.5 py-1 md:px-3 md:py-1.5 rounded-xl border-slate-700">Sin Selección Base</span>
-                )}
-
-                {selectedSauces.map(sObj => (
-                  <div
-                    key={sObj.id}
-                    className="flex items-center gap-1.5 md:gap-2 card-3d-glass px-3 py-1 md:px-4 md:py-2 rounded-xl md:rounded-2xl shadow-xl"
-                  >
-                    <SafeImage src={sObj.image} alt={sObj.name} fallbackEmoji="🥫" className="w-5 h-5 md:w-6 md:h-6 rounded-full object-cover border border-slate-600 shadow" />
-                    <span className="text-xs font-bold">{sObj.name}</span>
-                  </div>
-                ))}
-
-                {selectedDrink && (
-                  <div className="flex items-center gap-2 card-3d-glass border-amber-500/60 px-3 py-1 md:px-4 md:py-1.5 rounded-xl md:rounded-2xl shadow-2xl">
-                    <SafeImage
-                      src={selectedDrink.image}
-                      alt={selectedDrink.name}
-                      fallbackEmoji="🥤"
-                      defaultFallbackUrl={PLACEHOLDER_DRINK}
-                      className="w-6 h-6 md:w-8 md:h-8 rounded-lg object-cover border border-amber-400/80 shadow"
-                    />
-                    <div className="flex flex-col text-left">
-                      <span className="text-xs text-amber-400 font-extrabold uppercase tracking-wider">Bebida (+${selectedDrink.price} MXN)</span>
-                      <span className="text-xs font-bold text-white">{selectedDrink.name}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-            </div>
-          </div>
-
-          <div className="w-full md:w-1/2 p-6 md:p-10 pb-28 md:pb-10 overflow-y-auto md:max-h-screen bg-slate-950 flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-800">
-                <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Personaliza tu Pedido</span>
-                <button
-                  type="button"
-                  aria-label="Reiniciar selección actual"
-                  onClick={resetSelections}
-                  className="text-xs text-slate-400 hover:text-orange-400 transition font-medium flex items-center gap-1 card-3d-glass border border-slate-800 px-2.5 py-1 rounded-lg hover:-translate-y-0.5"
-                >
-                  🔄 Reiniciar selección
-                </button>
-              </div>
-
-              <PresetList presets={chefPresets} onApply={applyPreset} />
-
-              {savedFavorites.length > 0 && (
-                <div className="mb-6 card-3d-glass p-3.5 rounded-2xl border border-white/10">
-                  <h3 className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-2">Mis Combinaciones Guardadas</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {savedFavorites.map(fav => (
-                      <button
-                        key={fav.id}
-                        type="button"
-                        aria-label={`Cargar favorito ${fav.name}`}
-                        onClick={() => loadFavorite(fav)}
-                        className="bg-orange-500/20 text-orange-300 border border-orange-500/40 text-xs px-3 py-1.5 rounded-xl hover:bg-orange-500/30 transition-all transform active:scale-95 font-semibold shadow-sm hover:-translate-y-0.5"
-                      >
-                        ★ {fav.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-1.5">
-                  <h3 className="text-sm font-bold text-orange-400 flex items-center gap-1.5">
-                    <span className="w-5 h-5 bg-orange-500/20 text-orange-400 rounded-full flex items-center justify-center text-xs border border-orange-500/40">1</span>
-                    Elige tu Orden (Incluye 3 Banderillas)
-                  </h3>
-                </div>
-                <div className="grid grid-cols-1 gap-2">
-                  {bases.map(b => {
-                    const isSelected = selectedBase?.id === b.id;
-                    return (
-                      <button
-                        key={b.id}
-                        type="button"
-                        aria-label={`Seleccionar base ${b.name}`}
-                        onClick={() => handleBaseChange(b)}
-                        className={`p-3.5 rounded-xl border text-left flex justify-between items-center transition-all transform active:scale-95 card-3d-glass ${isSelected
-                          ? 'border-orange-500 bg-orange-500/20 text-white shadow-xl shadow-orange-500/10 font-semibold ring-1 ring-orange-500/40 -translate-y-0.5'
-                          : 'hover:border-slate-700 hover:-translate-y-0.5'
-                          }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span>{b.icon}</span>
-                          <span className="font-medium text-sm">{b.name}</span>
-                          {b.badge && <span className="bg-orange-500/30 text-orange-300 text-[11px] font-bold px-2 py-0.5 rounded-full border border-orange-500/40 shadow-sm">{b.badge}</span>}
-                        </div>
-                        <span className="font-extrabold text-orange-400 text-sm">${b.price} MXN</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <CoatingSelector
-                activeSlot={activeCoatingSlot}
-                coatings={coatings}
-                selectedCoatings={selectedCoatings}
-                onSelectSlot={handleCoatingSlotSelect}
-                onSelectCoating={handleCoatingSelect}
-              />
-
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-2.5">
-                  <h3 className="text-sm font-bold text-orange-400 flex items-center gap-1.5">
-                    <span className="w-5 h-5 bg-orange-500/20 text-orange-400 rounded-full flex items-center justify-center text-xs border border-orange-500/40">3</span>
-                    Salsas y Extras
-                  </h3>
-                  <span className="text-xs text-slate-300">(Elegidos: {selectedSauces.length})</span>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
-                  {availableSauces.map(s => {
-                    const active = selectedSauces.some(item => item.id === s.id);
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        aria-label={`Seleccionar salsa ${s.name}`}
-                        onClick={() => toggleSauce(s)}
-                        className={`p-2 rounded-xl border flex items-center gap-2.5 transition-all transform active:scale-95 card-3d-glass ${active
-                          ? 'border-orange-500 bg-orange-500/30 text-white font-bold shadow-lg ring-1 ring-orange-500/40 -translate-y-0.5'
-                          : 'hover:border-slate-700 hover:-translate-y-0.5'
-                          }`}
-                      >
-                        <SafeImage
-                          src={s.image}
-                          alt={s.name}
-                          fallbackEmoji="🥫"
-                          className="w-8 h-8 rounded-lg object-cover border border-slate-700 flex-shrink-0 shadow"
-                        />
-                        <span className="text-xs font-medium truncate">{active ? '✓ ' : ''}{s.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="text-sm font-bold text-orange-400 mb-2.5 flex items-center gap-1.5">
-                  <span className="w-5 h-5 bg-orange-500/20 text-orange-400 rounded-full flex items-center justify-center text-xs border border-orange-500/40">4</span>
-                  Bebida Opcional
-                </h3>
-                <div className="flex overflow-x-auto gap-2.5 pb-2 pt-1 no-scrollbar snap-x snap-mandatory">
-                  {drinks.map(d => {
-                    const isSelected = selectedDrink?.id === d.id;
-                    return (
-                      <button
-                        key={d.id}
-                        type="button"
-                        aria-label={`Seleccionar bebida ${d.name}`}
-                        onClick={() => {
-                          playSound('click');
-                          dispatch({ type: 'SET_DRINK', payload: isSelected ? null : d });
-                        }}
-                        className={`p-2.5 rounded-xl border text-left text-xs flex items-center gap-3 transition-all transform active:scale-95 flex-shrink-0 w-52 snap-start card-3d-glass ${isSelected
-                          ? 'border-orange-500 bg-orange-500/20 text-white shadow-xl font-semibold ring-1 ring-orange-500/40 -translate-y-0.5'
-                          : 'hover:border-slate-700 hover:-translate-y-0.5'
-                          }`}
-                      >
-                        <SafeImage
-                          src={d.image}
-                          alt={d.name}
-                          fallbackEmoji="🥤"
-                          defaultFallbackUrl={PLACEHOLDER_DRINK}
-                          className="w-10 h-10 object-cover rounded-lg border border-slate-700 flex-shrink-0 shadow"
-                        />
-                        <div className="flex flex-col justify-between flex-1 min-w-0">
-                          <span className="font-semibold text-slate-200 truncate">{d.name}</span>
-                          <span className="font-extrabold text-orange-400 mt-1">${d.price} MXN</span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="mb-6 flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Guarda esta orden (ej. Mi Orden Especial)..."
-                  value={favoriteName}
-                  onChange={(e) => setFavoriteName(e.target.value)}
-                  className="bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs flex-1 text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 transition shadow-inner"
-                />
-                <button
-                  type="button"
-                  aria-label="Guardar orden como favorita"
-                  onClick={saveFavorite}
-                  className="bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-semibold px-4 py-2 rounded-xl transition-all transform border border-slate-700 text-slate-200 shadow-md hover:-translate-y-0.5"
-                >
-                  ★ Guardar
-                </button>
-              </div>
-            </div>
-
-            <div className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto bg-slate-950/90 backdrop-blur-xl md:bg-transparent p-4 md:p-0 md:pt-4 border-t border-white/10 flex items-center justify-between gap-4 z-40 shadow-2xl md:shadow-none">
-              <div>
-                <span className="text-2xl md:text-3xl font-black text-orange-400 drop-shadow">${currentPrice} MXN</span>
-                <span className="text-[10px] md:text-xs text-slate-300 block">Incluye 3 Banderillas + Cubiertos</span>
-              </div>
-              <button
-                type="button"
-                aria-label="Agregar orden completa al carrito"
-                onClick={addToCart}
-                disabled={!isOpen || !selectedBase || selectedCoatings.some(c => c === null)}
-                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold py-3 md:py-3.5 px-5 md:px-6 rounded-2xl shadow-xl shadow-orange-500/20 transition-all transform active:scale-95 flex items-center gap-2 text-xs md:text-sm border-t border-white/30"
-              >
-                <span>{!selectedBase || selectedCoatings.some(c => c === null) ? 'Elige 3 Cubiertos' : 'Agregar Orden al Carrito'}</span>
-                <span className="bg-white/20 px-2 py-0.5 rounded-lg text-xs shadow-inner">🛒</span>
-              </button>
-            </div>
-          </div>
-
-          <CartModal
-            isOpen={isCartOpen}
-            cart={cart}
-            storeOpen={isOpen}
-            deliveryType={deliveryType}
-            customerName={customerName}
-            customerPhone={customerPhone}
-            deliveryAddress={deliveryAddress}
-            paymentMethod={paymentMethod}
-            validationErrors={validationErrors}
-            onClose={() => { playSound('click'); setIsCartOpen(false); }}
-            onRemoveItem={removeFromCart}
-            onCheckout={checkoutWhatsApp}
-            setCustomerName={setCustomerName}
-            setCustomerPhone={setCustomerPhone}
-            setDeliveryAddress={setDeliveryAddress}
-            setPaymentMethod={setPaymentMethod}
-            setDeliveryType={setDeliveryType}
-          />
-
-        </div>
-      );
-    }
-
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+      },
+      className: `p-2.5 rounded-xl border text-left text-xs flex items-center gap-3 transition-all transform active:scale-95 flex-shrink-0 w-52 snap-start card-3d-glass ${isSelected ? 'border-orange-500 bg-orange-500/20 text-white shadow-xl font-semibold ring-1 ring-orange-500/40 -translate-y-0.5' : 'hover:border-slate-700 hover:-translate-y-0.5'}`
+    }, /*#__PURE__*/React.createElement(SafeImage, {
+      src: d.image,
+      alt: d.name,
+      fallbackEmoji: "🥤",
+      defaultFallbackUrl: PLACEHOLDER_DRINK,
+      className: "w-10 h-10 object-cover rounded-lg border border-slate-700 flex-shrink-0 shadow"
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-col justify-between flex-1 min-w-0"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "font-semibold text-slate-200 truncate"
+    }, d.name), /*#__PURE__*/React.createElement("span", {
+      className: "font-extrabold text-orange-400 mt-1"
+    }, "$", d.price, " MXN")));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "mb-6 flex gap-2"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    placeholder: "Guarda esta orden (ej. Mi Orden Especial)...",
+    value: favoriteName,
+    onChange: e => setFavoriteName(e.target.value),
+    className: "bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs flex-1 text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 transition shadow-inner"
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    "aria-label": "Guardar orden como favorita",
+    onClick: saveFavorite,
+    className: "bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-semibold px-4 py-2 rounded-xl transition-all transform border border-slate-700 text-slate-200 shadow-md hover:-translate-y-0.5"
+  }, "★ Guardar"))), /*#__PURE__*/React.createElement("div", {
+    className: "fixed bottom-0 left-0 right-0 md:relative md:bottom-auto bg-slate-950/90 backdrop-blur-xl md:bg-transparent p-4 md:p-0 md:pt-4 border-t border-white/10 flex items-center justify-between gap-4 z-40 shadow-2xl md:shadow-none"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "text-2xl md:text-3xl font-black text-orange-400 drop-shadow"
+  }, "$", currentPrice, " MXN"), /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] md:text-xs text-slate-300 block"
+  }, "Incluye 3 Banderillas + Cubiertos")), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    "aria-label": "Agregar orden completa al carrito",
+    onClick: addToCart,
+    disabled: !isOpen || !selectedBase || selectedCoatings.some(c => c === null),
+    className: "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold py-3 md:py-3.5 px-5 md:px-6 rounded-2xl shadow-xl shadow-orange-500/20 transition-all transform active:scale-95 flex items-center gap-2 text-xs md:text-sm border-t border-white/30"
+  }, /*#__PURE__*/React.createElement("span", null, !selectedBase || selectedCoatings.some(c => c === null) ? 'Elige 3 Cubiertos' : 'Agregar Orden al Carrito'), /*#__PURE__*/React.createElement("span", {
+    className: "bg-white/20 px-2 py-0.5 rounded-lg text-xs shadow-inner"
+  }, "🛒")))), /*#__PURE__*/React.createElement(CartModal, {
+    isOpen: isCartOpen,
+    cart: cart,
+    storeOpen: isOpen,
+    deliveryType: deliveryType,
+    customerName: customerName,
+    customerPhone: customerPhone,
+    deliveryAddress: deliveryAddress,
+    paymentMethod: paymentMethod,
+    validationErrors: validationErrors,
+    onClose: () => {
+      playSound('click');
+      setIsCartOpen(false);
+    },
+    onRemoveItem: removeFromCart,
+    onCheckout: checkoutWhatsApp,
+    setCustomerName: setCustomerName,
+    setCustomerPhone: setCustomerPhone,
+    setDeliveryAddress: setDeliveryAddress,
+    setPaymentMethod: setPaymentMethod,
+    setDeliveryType: setDeliveryType
+  }));
+}
+ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
+    </script>
 </body>
 
 </html>
