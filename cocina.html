@@ -133,10 +133,10 @@ const COLUMNS = [
 ];
 const ROLES = {
   cocina: { label: 'Cocina', emoji: '🍳', columnIds: ['pending', 'preparing'], showItems: true, showAddressPhone: false, canAdvance: true },
-  reparto: { label: 'Reparto', emoji: '🛵', columnIds: ['shipping'], showItems: false, showAddressPhone: true, canAdvance: false }
+  reparto: { label: 'Reparto', emoji: '🛵', columnIds: ['shipping'], showItems: false, showAddressPhone: true, canAdvance: true }
 };
-const NEXT_STATUS = { pending: 'preparing', preparing: 'shipping' };
-const ADVANCE_LABEL = { pending: '🍳 Empezar a preparar', preparing: '✅ Listo' };
+const NEXT_STATUS = { pending: 'preparing', preparing: 'shipping', shipping: 'completed' };
+const ADVANCE_LABEL = { pending: '📞 Aceptar y Avisar', preparing: '🚚 Enviar / Avisar', shipping: '✅ Entregado y Avisar' };
 const ROLE_STORAGE_KEY = 'banderillas_kitchen_role';
 const ALERT_MIN = 10;
 
@@ -169,6 +169,58 @@ function KitchenBoard({ role, onChangeRole }) {
   const firstLoad = useRef(true);
   const wakeLockRef = useRef(null);
   const [wakeLockEnabled, setWakeLockEnabled] = useState(() => localStorage.getItem('banderillas_kitchen_wakelock') === 'true');
+
+  // Aviso por VOZ, igual que en el panel de administración: no requiere
+  // ningún permiso del navegador, así que funciona siempre. Activado por
+  // defecto para que suene solo la primera vez.
+  const [ttsEnabled, setTtsEnabled] = useState(() => localStorage.getItem('banderillas_kitchen_tts') !== 'false');
+  const ttsEnabledRef = useRef(ttsEnabled);
+  useEffect(() => {
+    ttsEnabledRef.current = ttsEnabled;
+    localStorage.setItem('banderillas_kitchen_tts', ttsEnabled);
+  }, [ttsEnabled]);
+  const speakOrder = (order, message) => {
+    if (!ttsEnabledRef.current || typeof window.speechSynthesis === 'undefined') return;
+    try {
+      // Chrome/Android a veces deja el motor de voz "atorado" en pausa tras
+      // estar un rato inactivo; cancelar y reanudar antes de hablar evita
+      // que el mensaje se pierda en silencio.
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
+      const utter = new SpeechSynthesisUtterance(message || `Nuevo pedido de ${order.customer}`);
+      utter.lang = 'es-MX';
+      utter.rate = 0.95;
+      utter.volume = 1;
+      window.speechSynthesis.speak(utter);
+    } catch (e) {}
+  };
+  const STATUS_ANNOUNCE = {
+    pending: order => order.deliveryType === 'delivery'
+      ? `Nuevo pedido de ${order.customer}, va a domicilio, a ${order.address}`
+      : `Nuevo pedido de ${order.customer}, para recoger en tienda`
+  };
+
+  // Igual que en admin.html: los navegadores no dejan que la página hable
+  // sola sin que antes haya habido un toque/clic del usuario. Con el primer
+  // toque en la pantalla "calentamos" el motor de voz con un mensaje mudo,
+  // así el primer aviso real de un pedido sí se alcanza a oír.
+  useEffect(() => {
+    const unlockTts = () => {
+      if (typeof window.speechSynthesis === 'undefined' || window.__ttsUnlocked) return;
+      try {
+        const warm = new SpeechSynthesisUtterance(' ');
+        warm.volume = 0;
+        window.speechSynthesis.speak(warm);
+        window.__ttsUnlocked = true;
+      } catch (e) {}
+    };
+    document.addEventListener('click', unlockTts);
+    document.addEventListener('touchstart', unlockTts);
+    return () => {
+      document.removeEventListener('click', unlockTts);
+      document.removeEventListener('touchstart', unlockTts);
+    };
+  }, []);
 
   const requestWakeLock = async () => {
     if (!('wakeLock' in navigator)) {
@@ -213,6 +265,35 @@ function KitchenBoard({ role, onChangeRole }) {
     if (!nextStatus || !window.db || !window.ref || !window.update || !order.firebaseKey) return;
     const orderRef = window.ref(window.db, `pedidos/${order.firebaseKey}`);
     window.update(orderRef, { status: nextStatus, statusUpdatedAt: new Date().toISOString() });
+    sendWhatsAppStatusUpdate(order, nextStatus);
+  };
+
+  // Igual que en admin.html: al avanzar un pedido le abre WhatsApp con un
+  // mensaje ya escrito para el cliente, hasta que el pedido se marca
+  // como Entregado (se cierra la venta).
+  const sendWhatsAppStatusUpdate = (order, newStatus) => {
+    if (!order.phone) return;
+    let cleanPhone = order.phone.replace(/\D/g, '');
+    if (cleanPhone.length === 10) cleanPhone = '52' + cleanPhone;
+    const orderNum = order.orderNumber ? order.orderNumber : (order.id ? String(order.id).slice(-4) : '0000');
+    let message = '';
+    switch (newStatus) {
+      case 'preparing':
+        message = `🍳 *¡Hola ${order.customer}!*\n\nTu pedido *#${orderNum}* de *Banderillas Coreanas* ha sido aceptado y ya se encuentra *En Preparación*. 🔥\n\n¡Te avisaremos en cuanto salga!`;
+        break;
+      case 'shipping':
+        message = order.deliveryType === 'delivery'
+          ? `🛵 *¡Buenas noticias, ${order.customer}!*\n\nTu pedido *#${orderNum}* ya va *En Camino* a tu dirección (${order.address}). 📍\n\n¡El repartidor llegará pronto!`
+          : `🏪 *¡Hola ${order.customer}!*\n\nTu pedido *#${orderNum}* ya está *Listo para Recoger* en sucursal. 🌭\n\n¡Te esperamos!`;
+        break;
+      case 'completed':
+        message = `✅ *¡Pedido Entregado!*\n\nMuchas gracias por tu compra en *Banderillas Coreanas*, ${order.customer}. Esperamos que lo disfrutes mucho. 🌭🔥🧀\n\n¡Nos encantaría volver a atenderte pronto!`;
+        break;
+      default:
+        return;
+    }
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
   };
 
   const getAudioCtx = () => {
@@ -256,6 +337,10 @@ function KitchenBoard({ role, onChangeRole }) {
           if (arrived.length > 0 && !firstLoad.current) {
             beep();
             if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+            arrived.forEach(k => {
+              const arrivedOrder = loaded.find(o => o.firebaseKey === k);
+              if (arrivedOrder && arrivedOrder.status === 'pending') speakOrder(arrivedOrder, STATUS_ANNOUNCE.pending(arrivedOrder));
+            });
           }
           prevKeysRef.current = currentKeys;
           firstLoad.current = false;
@@ -275,6 +360,10 @@ function KitchenBoard({ role, onChangeRole }) {
           onClick: () => { wakeLockEnabled ? releaseWakeLock() : requestWakeLock(); },
           className: `flex items-center gap-1 text-[10px] sm:text-xs px-2.5 py-1 rounded-full border whitespace-nowrap transition ${wakeLockEnabled ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-slate-700 text-slate-500'}`
         }, wakeLockEnabled ? '☀️ Pantalla activa' : '🌙 Pantalla libre'),
+        React.createElement('button', {
+          onClick: () => setTtsEnabled(v => !v),
+          className: `flex items-center gap-1 text-[10px] sm:text-xs px-2.5 py-1 rounded-full border whitespace-nowrap transition ${ttsEnabled ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-slate-700 text-slate-500'}`
+        }, ttsEnabled ? '🔊 Voz activa' : '🔇 Voz apagada'),
         React.createElement('button', {
           onClick: onChangeRole,
           className: 'text-[10px] sm:text-xs text-slate-500 hover:text-slate-300 border border-slate-700 rounded-full px-2.5 py-1'
@@ -324,8 +413,13 @@ function KitchenBoard({ role, onChangeRole }) {
                     order.deliveryType === 'delivery'
                       ? React.createElement('p', { className: 'text-base sm:text-lg text-white font-semibold bg-black/30 rounded-xl p-2.5' }, '📍 ', order.address)
                       : React.createElement('p', { className: 'text-base sm:text-lg text-white font-semibold bg-black/30 rounded-xl p-2.5' }, '🏪 Recoger en sucursal'),
+                    order.deliveryType === 'delivery' && order.location && order.location.lat && order.location.lng && React.createElement('span', {
+                      className: 'inline-block text-[10px] sm:text-xs font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded-full'
+                    }, '✅ Ubicación GPS precisa'),
                     order.deliveryType === 'delivery' && order.address && React.createElement('a', {
-                      href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.address)}`,
+                      href: (order.location && order.location.lat && order.location.lng)
+                        ? `https://www.google.com/maps/search/?api=1&query=${order.location.lat},${order.location.lng}`
+                        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.address)}`,
                       target: '_blank',
                       rel: 'noopener noreferrer',
                       className: 'flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-500 text-white text-lg sm:text-xl font-black py-3 rounded-xl'

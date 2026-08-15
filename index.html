@@ -241,18 +241,17 @@ const {
 const PHONE_NUMBER = "527442411773";
 const OPEN_HOUR = 13;
 const CLOSE_HOUR = 20;
-// Zonas de cobertura de delivery: edita este arreglo con las colonias/zonas
-// reales a las que sí llegas. El cliente las elige en un menú desplegable.
-const DELIVERY_ZONES = [
+// Pueblos/colonias donde sí entregas: edita este arreglo con los lugares
+// reales a los que llegas. El cliente los elige en un menú desplegable
+// obligatorio, para no aceptar pedidos fuera de tu cobertura.
+const DELIVERY_TOWNS = [
   "Centro",
   "Costa Azul",
   "Progreso",
   "Icacos",
   "Farallón / Diamante",
-  "Renacimiento",
-  "Otra zona (fuera de las anteriores)"
+  "Renacimiento"
 ];
-const OUT_OF_ZONE_OPTION = "Otra zona (fuera de las anteriores)";
 const PLACEHOLDER_FOOD = "https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&w=400&q=80";
 const PLACEHOLDER_DRINK = "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&q=80";
 const playSound = type => {
@@ -515,16 +514,19 @@ function CartModal({
   customerName,
   customerPhone,
   deliveryAddress,
-  deliveryZone,
+  deliveryTown,
+  deliveryCoords,
+  locatingGPS,
   paymentMethod,
   validationErrors,
   onClose,
   onRemoveItem,
   onCheckout,
+  onUseMyLocation,
   setCustomerName,
   setCustomerPhone,
   setDeliveryAddress,
-  setDeliveryZone,
+  setDeliveryTown,
   setPaymentMethod,
   setDeliveryType
 }) {
@@ -691,32 +693,35 @@ function CartModal({
     className: "text-orange-400"
   }, "*")), /*#__PURE__*/React.createElement("input", {
     type: "text",
-    placeholder: "Calle, número, colonia...",
+    placeholder: "Calle, número, referencia...",
     value: deliveryAddress,
     onChange: e => setDeliveryAddress(e.target.value),
     className: `w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 transition-all ${validationErrors.deliveryAddress ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20' : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'}`
   }), validationErrors.deliveryAddress && /*#__PURE__*/React.createElement("span", {
     className: "text-[10px] text-red-400 mt-1 block"
-  }, "Ingresa tu dirección")))), deliveryType === 'delivery' && /*#__PURE__*/React.createElement("div", {
+  }, "Ingresa tu dirección"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: onUseMyLocation,
+    disabled: locatingGPS,
+    className: `mt-1.5 w-full flex items-center justify-center gap-1.5 text-[11px] font-bold py-2 rounded-xl border transition-all active:scale-95 ${deliveryCoords ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-orange-500'}`
+  }, locatingGPS ? '📡 Obteniendo ubicación...' : deliveryCoords ? '✅ Ubicación precisa agregada (toca para actualizar)' : '📍 Usar mi ubicación actual')))), deliveryType === 'delivery' && /*#__PURE__*/React.createElement("div", {
     className: "mt-2"
   }, /*#__PURE__*/React.createElement("label", {
     className: "text-xs font-bold text-slate-200 block mb-1.5"
-  }, "Zona de entrega ", /*#__PURE__*/React.createElement("span", {
+  }, "Pueblo de entrega ", /*#__PURE__*/React.createElement("span", {
     className: "text-orange-400"
   }, "*")), /*#__PURE__*/React.createElement("select", {
-    value: deliveryZone,
-    onChange: e => setDeliveryZone(e.target.value),
-    className: `w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-1 transition-all ${validationErrors.deliveryZone ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20' : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'}`
+    value: deliveryTown,
+    onChange: e => setDeliveryTown(e.target.value),
+    className: `w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-1 transition-all ${validationErrors.deliveryTown ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20' : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'}`
   }, /*#__PURE__*/React.createElement("option", {
     value: ""
-  }, "Selecciona tu zona..."), ...DELIVERY_ZONES.map(z => /*#__PURE__*/React.createElement("option", {
+  }, "Selecciona tu pueblo..."), ...DELIVERY_TOWNS.map(z => /*#__PURE__*/React.createElement("option", {
     key: z,
     value: z
-  }, z))), validationErrors.deliveryZone && /*#__PURE__*/React.createElement("span", {
+  }, z))), validationErrors.deliveryTown && /*#__PURE__*/React.createElement("span", {
     className: "text-[10px] text-red-400 mt-1 block"
-  }, "Selecciona tu zona"), deliveryZone === OUT_OF_ZONE_OPTION && /*#__PURE__*/React.createElement("span", {
-    className: "text-[10px] text-amber-400 mt-1 block"
-  }, "⚠️ Fuera de nuestra zona habitual: podría tardar más o tener costo extra, te confirmamos por WhatsApp.")), /*#__PURE__*/React.createElement("div", {
+  }, "Selecciona tu pueblo")), /*#__PURE__*/React.createElement("div", {
     className: "flex-shrink-0 pt-3 border-t border-white/10 mt-2 bg-slate-950/90 space-y-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "space-y-1"
@@ -849,7 +854,9 @@ function App() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [deliveryZone, setDeliveryZone] = useState('');
+  const [deliveryTown, setDeliveryTown] = useState('');
+  const [deliveryCoords, setDeliveryCoords] = useState(null); // {lat, lng} — ubicación GPS precisa opcional
+  const [locatingGPS, setLocatingGPS] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Efectivo');
   const [validationErrors, setValidationErrors] = useState({});
   const [isOpen, setIsOpen] = useState(true);
@@ -902,6 +909,29 @@ function App() {
   const showToast = msg => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+  // Captura la ubicación GPS exacta del cliente (lat/lng) para que el
+  // repartidor pueda abrir el pin preciso en Maps en vez de solo buscar
+  // por el texto de la dirección escrita a mano.
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      showToast('⚠️ Tu navegador no permite compartir ubicación');
+      return;
+    }
+    setLocatingGPS(true);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setDeliveryCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocatingGPS(false);
+        playSound('success');
+        showToast('📍 ¡Ubicación precisa agregada!');
+      },
+      () => {
+        setLocatingGPS(false);
+        showToast('⚠️ No se pudo obtener tu ubicación. Revisa los permisos del navegador');
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
   };
   const toggleSauce = sauceObj => {
     playSound('click');
@@ -1009,15 +1039,11 @@ function App() {
     if (!customerName.trim()) errors.customerName = true;
     if (!customerPhone.trim() || customerPhone.length < 8) errors.customerPhone = true;
     if (deliveryType === 'delivery' && !deliveryAddress.trim()) errors.deliveryAddress = true;
-    if (deliveryType === 'delivery' && !deliveryZone) errors.deliveryZone = true;
+    if (deliveryType === 'delivery' && !deliveryTown) errors.deliveryTown = true;
     setValidationErrors(errors);
     if (Object.keys(errors).length > 0) {
       showToast('⚠️ Revisa los campos requeridos marcados en rojo');
       return;
-    }
-    if (deliveryType === 'delivery' && deliveryZone === OUT_OF_ZONE_OPTION) {
-      const continuar = window.confirm('Tu zona podría estar fuera de nuestra cobertura habitual de entrega. Podemos tardar más o tener un costo extra. ¿Deseas continuar y que te confirmemos por WhatsApp?');
-      if (!continuar) return;
     }
     playSound('success');
 
@@ -1039,7 +1065,8 @@ function App() {
       phone: customerPhone.trim(),
       deliveryType,
       address: deliveryAddress.trim(),
-      zone: deliveryType === 'delivery' ? deliveryZone : '',
+      town: deliveryType === 'delivery' ? deliveryTown : '',
+      location: deliveryType === 'delivery' && deliveryCoords ? deliveryCoords : null,
       paymentMethod,
       cart,
       total: cart.reduce((a, b) => a + b.price, 0),
@@ -1071,7 +1098,10 @@ function App() {
     message += `⏱️ *Tiempo Estimado:* ${deliveryType === 'delivery' ? '30-45 min' : '15-20 min'}\n`;
     if (deliveryType === 'delivery' && deliveryAddress.trim()) {
       message += `🏠 *Dirección:* ${deliveryAddress.trim()}\n`;
-      message += `📌 *Zona:* ${deliveryZone}\n`;
+      message += `📌 *Pueblo:* ${deliveryTown}\n`;
+      if (deliveryCoords) {
+        message += `📍 *Ubicación GPS:* https://maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`;
+      }
     }
     message += `\n`;
     cart.forEach((item, index) => {
@@ -1105,6 +1135,8 @@ function App() {
     setCustomerName('');
     setCustomerPhone('');
     setDeliveryAddress('');
+    setDeliveryTown('');
+    setDeliveryCoords(null);
     setValidationErrors({});
     setIsCartOpen(false);
     showToast('✅ ¡Pedido enviado con éxito!');
@@ -1384,7 +1416,9 @@ function App() {
     customerName: customerName,
     customerPhone: customerPhone,
     deliveryAddress: deliveryAddress,
-    deliveryZone: deliveryZone,
+    deliveryTown: deliveryTown,
+    deliveryCoords: deliveryCoords,
+    locatingGPS: locatingGPS,
     paymentMethod: paymentMethod,
     validationErrors: validationErrors,
     onClose: () => {
@@ -1393,10 +1427,11 @@ function App() {
     },
     onRemoveItem: removeFromCart,
     onCheckout: checkoutWhatsApp,
+    onUseMyLocation: handleUseMyLocation,
     setCustomerName: setCustomerName,
     setCustomerPhone: setCustomerPhone,
     setDeliveryAddress: setDeliveryAddress,
-    setDeliveryZone: setDeliveryZone,
+    setDeliveryTown: setDeliveryTown,
     setPaymentMethod: setPaymentMethod,
     setDeliveryType: setDeliveryType
   }));
@@ -1424,28 +1459,52 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   function TrackedOrderCard({ tracked }) {
     const [liveOrder, setLiveOrder] = useState(null);
     const [archived, setArchived] = useState(null);
+    const [loadFailed, setLoadFailed] = useState(false);
     useEffect(() => {
       let unsubActive = null;
       let unsubHistory = null;
+      let cancelled = false;
+      // Si Firebase tarda demasiado o no responde (permisos, red, etc.),
+      // dejamos de mostrar el esqueleto de carga en blanco y avisamos.
+      const timeoutId = setTimeout(() => { if (!cancelled) setLoadFailed(true); }, 6000);
       const attach = () => {
         if (!(window.db && window.ref && window.onValue)) return false;
-        unsubActive = window.onValue(window.ref(window.db, `pedidos/${tracked.key}`), snap => {
-          setLiveOrder(snap.val());
-        });
-        unsubHistory = window.onValue(window.ref(window.db, `pedidos_historial/${tracked.key}`), snap => {
-          setArchived(snap.val());
-        });
+        unsubActive = window.onValue(
+          window.ref(window.db, `pedidos/${tracked.key}`),
+          snap => { clearTimeout(timeoutId); setLiveOrder(snap.val()); },
+          () => { clearTimeout(timeoutId); if (!cancelled) setLoadFailed(true); }
+        );
+        unsubHistory = window.onValue(
+          window.ref(window.db, `pedidos_historial/${tracked.key}`),
+          snap => { clearTimeout(timeoutId); setArchived(snap.val()); },
+          () => { clearTimeout(timeoutId); if (!cancelled) setLoadFailed(true); }
+        );
         return true;
       };
       if (!attach()) {
         const iv = setInterval(() => { if (attach()) clearInterval(iv); }, 300);
-        return () => clearInterval(iv);
+        return () => { cancelled = true; clearTimeout(timeoutId); clearInterval(iv); };
       }
-      return () => { if (unsubActive) unsubActive(); if (unsubHistory) unsubHistory(); };
+      return () => {
+        cancelled = true;
+        clearTimeout(timeoutId);
+        if (unsubActive) unsubActive();
+        if (unsubHistory) unsubHistory();
+      };
     }, [tracked.key]);
 
     const order = liveOrder || archived;
     const status = liveOrder ? liveOrder.status : (archived ? 'completed' : 'pending');
+    if (!order && loadFailed) {
+      // No pudimos confirmar el estado (pedido antiguo, borrado, o sin conexión).
+      return h('div', { className: 'bg-slate-800/60 rounded-xl p-3' },
+        h('div', { className: 'flex justify-between items-baseline mb-1' },
+          h('span', { className: 'font-bold text-white text-sm' }, `Pedido #${tracked.orderNumber || '----'}`),
+          h('span', { className: 'text-xs text-slate-400 font-semibold' }, 'Sin datos recientes')
+        ),
+        h('p', { className: 'text-[10px] text-slate-500' }, 'No pudimos cargar el estado de este pedido. Si crees que ya fue entregado o tienes dudas, contáctanos por WhatsApp.')
+      );
+    }
     if (liveOrder === null && archived === null) {
       // aún cargando la primera lectura de Firebase
       return h('div', { className: 'bg-slate-800/60 rounded-xl p-3 animate-pulse h-20' });
@@ -1493,7 +1552,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     return h(React.Fragment, null,
       h('button', {
         onClick: () => setOpen(true),
-        className: 'fixed bottom-5 right-5 z-40 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-sm px-4 py-3 rounded-full shadow-2xl shadow-orange-500/30 flex items-center gap-2'
+        className: 'fixed bottom-5 left-5 z-40 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-sm px-4 py-3 rounded-full shadow-2xl shadow-orange-500/30 flex items-center gap-2'
       }, '📦 Mis Pedidos', h('span', { className: 'bg-white/25 rounded-full px-2 py-0.5 text-xs' }, tracked.length)),
       open && h('div', {
         className: 'fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-3',
@@ -1516,7 +1575,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     );
   }
 
-  ReactDOM.createRoot(document.getElementById('tracking-root')).render(h(TrackingWidget, null));
+  // Seguimiento de "Mis Pedidos" desactivado: por ahora no se monta el
+  // widget (el botón/panel flotante no aparece). El código queda aquí por
+  // si se vuelve a activar más adelante (por ejemplo, al ajustar los
+  // permisos de lectura en las reglas de Firebase).
+  // ReactDOM.createRoot(document.getElementById('tracking-root')).render(h(TrackingWidget, null));
 })();
   </script>
   <!-- Deslizar hacia abajo para actualizar -->

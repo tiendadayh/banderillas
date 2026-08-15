@@ -563,7 +563,11 @@ function App() {
   const speakOrder = order => {
     if (!ttsEnabledRef.current || typeof window.speechSynthesis === 'undefined') return;
     try {
+      // Chrome/Android a veces deja el motor de voz "atorado" en pausa tras
+      // estar un rato inactivo; cancelar y reanudar antes de hablar evita
+      // que el mensaje se pierda en silencio.
       window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
       const utter = new SpeechSynthesisUtterance(`Nuevo pedido de ${order.customer}`);
       utter.lang = 'es-MX';
       utter.rate = 0.95;
