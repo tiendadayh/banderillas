@@ -205,9 +205,12 @@
     <div id="root"></div>
   </div>
 
+  <!-- SEGUIMIENTO DE PEDIDO (widget flotante independiente) -->
+  <div id="tracking-root"></div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, update, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, push, update, runTransaction, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAuL5YKxucoHUKCkoz5j6m9KU1XjTP0Z2o",
@@ -226,6 +229,7 @@
     window.update = update;
     window.runTransaction = runTransaction;
     window.ref = ref;
+    window.onValue = onValue;
   </script>
 
   <script type="text/javascript">
@@ -1009,6 +1013,13 @@ function App() {
       const ordersRef = window.ref(window.db, 'pedidos');
       newOrderRef = window.push(ordersRef, newOrderRecord);
     }
+    if (newOrderRef && newOrderRef.key) {
+      try {
+        const tracked = JSON.parse(localStorage.getItem('banderillas_tracked_orders') || '[]');
+        tracked.unshift({ key: newOrderRef.key, orderNumber, customer: newOrderRecord.customer, timestamp: newOrderRecord.timestamp });
+        localStorage.setItem('banderillas_tracked_orders', JSON.stringify(tracked.slice(0, 5)));
+      } catch (e) {}
+    }
     const displayNumber = orderNumber ? orderNumber : newOrderRecord.id.toString().slice(-4);
     let message = "🌭 *¡NUEVO PEDIDO BANDERILLAS COREANAS!* 🌭\n";
     message += `🔖 *Pedido #${displayNumber}*\n`;
@@ -1349,6 +1360,122 @@ function App() {
 }
 ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
     </script>
+
+  <script type="text/javascript">
+(function () {
+  const { useState, useEffect, useRef } = React;
+  const h = React.createElement;
+  const STEPS = [
+    { id: 'pending', label: 'Recibido', emoji: '📥' },
+    { id: 'preparing', label: 'Preparando', emoji: '🍳' },
+    { id: 'shipping', label: 'En camino', emoji: '🛵' },
+    { id: 'completed', label: 'Entregado', emoji: '✅' }
+  ];
+  const MAX_AGE_HOURS = 48;
+
+  function stepIndex(status) {
+    const i = STEPS.findIndex(s => s.id === status);
+    return i === -1 ? 0 : i;
+  }
+
+  function TrackedOrderCard({ tracked }) {
+    const [liveOrder, setLiveOrder] = useState(null);
+    const [archived, setArchived] = useState(null);
+    useEffect(() => {
+      let unsubActive = null;
+      let unsubHistory = null;
+      const attach = () => {
+        if (!(window.db && window.ref && window.onValue)) return false;
+        unsubActive = window.onValue(window.ref(window.db, `pedidos/${tracked.key}`), snap => {
+          setLiveOrder(snap.val());
+        });
+        unsubHistory = window.onValue(window.ref(window.db, `pedidos_historial/${tracked.key}`), snap => {
+          setArchived(snap.val());
+        });
+        return true;
+      };
+      if (!attach()) {
+        const iv = setInterval(() => { if (attach()) clearInterval(iv); }, 300);
+        return () => clearInterval(iv);
+      }
+      return () => { if (unsubActive) unsubActive(); if (unsubHistory) unsubHistory(); };
+    }, [tracked.key]);
+
+    const order = liveOrder || archived;
+    const status = liveOrder ? liveOrder.status : (archived ? 'completed' : 'pending');
+    if (liveOrder === null && archived === null) {
+      // aún cargando la primera lectura de Firebase
+      return h('div', { className: 'bg-slate-800/60 rounded-xl p-3 animate-pulse h-20' });
+    }
+    if (!order) return null; // el pedido ya no existe (fue borrado)
+
+    const idx = stepIndex(status);
+    return h('div', { className: 'bg-slate-800/70 border border-slate-700 rounded-xl p-3' },
+      h('div', { className: 'flex justify-between items-baseline mb-2' },
+        h('span', { className: 'font-bold text-white text-sm' }, `Pedido #${tracked.orderNumber || '----'}`),
+        h('span', { className: 'text-xs text-orange-300 font-semibold' }, STEPS[idx].label)
+      ),
+      h('div', { className: 'flex items-center' },
+        STEPS.map((s, i) => h(React.Fragment, { key: s.id },
+          h('div', { className: 'flex flex-col items-center flex-1' },
+            h('div', {
+              className: `w-7 h-7 rounded-full flex items-center justify-center text-xs ${i <= idx ? 'bg-orange-500 text-white' : 'bg-slate-700 text-slate-500'}`
+            }, s.emoji),
+            h('span', { className: `text-[9px] mt-1 text-center ${i <= idx ? 'text-orange-300' : 'text-slate-500'}` }, s.label)
+          ),
+          i < STEPS.length - 1 && h('div', { className: `h-0.5 flex-1 -mt-4 ${i < idx ? 'bg-orange-500' : 'bg-slate-700'}` })
+        ))
+      )
+    );
+  }
+
+  function TrackingWidget() {
+    const [tracked, setTracked] = useState([]);
+    const [open, setOpen] = useState(false);
+
+    useEffect(() => {
+      try {
+        const saved = JSON.parse(localStorage.getItem('banderillas_tracked_orders') || '[]');
+        const fresh = saved.filter(o => {
+          const ageH = (Date.now() - new Date(o.timestamp).getTime()) / 3600000;
+          return ageH <= MAX_AGE_HOURS;
+        });
+        localStorage.setItem('banderillas_tracked_orders', JSON.stringify(fresh));
+        setTracked(fresh);
+      } catch (e) {}
+    }, []);
+
+    if (tracked.length === 0) return null;
+
+    return h(React.Fragment, null,
+      h('button', {
+        onClick: () => setOpen(true),
+        className: 'fixed bottom-5 right-5 z-40 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-sm px-4 py-3 rounded-full shadow-2xl shadow-orange-500/30 flex items-center gap-2'
+      }, '📦 Mis Pedidos', h('span', { className: 'bg-white/25 rounded-full px-2 py-0.5 text-xs' }, tracked.length)),
+      open && h('div', {
+        className: 'fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-3',
+        onClick: () => setOpen(false)
+      },
+        h('div', {
+          className: 'bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm p-4 max-h-[80vh] overflow-y-auto',
+          onClick: e => e.stopPropagation()
+        },
+          h('div', { className: 'flex justify-between items-center mb-3' },
+            h('h2', { className: 'font-bold text-white text-base' }, '📦 Seguimiento de mis pedidos'),
+            h('button', { onClick: () => setOpen(false), className: 'text-slate-400 hover:text-white text-xl leading-none' }, '×')
+          ),
+          h('div', { className: 'space-y-3' },
+            tracked.map(t => h(TrackedOrderCard, { key: t.key, tracked: t }))
+          ),
+          h('p', { className: 'text-[10px] text-slate-500 mt-3' }, 'El estado se actualiza en vivo. Si tienes dudas, contáctanos por WhatsApp.')
+        )
+      )
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('tracking-root')).render(h(TrackingWidget, null));
+})();
+  </script>
   <!-- Deslizar hacia abajo para actualizar -->
   <div id="ptr-indicator" style="position:fixed;top:0;left:50%;transform:translate(-50%,-60px);width:38px;height:38px;display:flex;align-items:center;justify-content:center;z-index:99999;pointer-events:none;">
     <div id="ptr-spinner" style="width:26px;height:26px;border-radius:50%;border:3px solid rgba(249,115,22,0.25);border-top-color:#f97316;opacity:0;"></div>

@@ -545,6 +545,57 @@ function App() {
   const repeatSoundIntervalRef = useRef(null);
   const wakeLockRef = useRef(null);
   const [wakeLockEnabled, setWakeLockEnabled] = useState(() => localStorage.getItem('banderillas_wakelock_enabled') === 'true');
+  const [notifEnabled, setNotifEnabled] = useState(() => localStorage.getItem('banderillas_notif_enabled') === 'true' && typeof Notification !== 'undefined' && Notification.permission === 'granted');
+  const notifEnabledRef = useRef(notifEnabled);
+  useEffect(() => {
+    notifEnabledRef.current = notifEnabled;
+  }, [notifEnabled]);
+  const toggleNotifications = async () => {
+    if (typeof Notification === 'undefined') {
+      alert('Este navegador no soporta notificaciones.');
+      return;
+    }
+    if (notifEnabled) {
+      setNotifEnabled(false);
+      localStorage.setItem('banderillas_notif_enabled', 'false');
+      return;
+    }
+    if (Notification.permission === 'granted') {
+      setNotifEnabled(true);
+      localStorage.setItem('banderillas_notif_enabled', 'true');
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      alert('Bloqueaste las notificaciones para esta página. Actívalas desde el ícono de candado/información junto a la URL de tu navegador y vuelve a intentar.');
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      setNotifEnabled(true);
+      localStorage.setItem('banderillas_notif_enabled', 'true');
+      new Notification('🌭 Notificaciones activadas', {
+        body: 'Te avisaremos aquí cuando llegue un pedido nuevo.'
+      });
+    }
+  };
+
+  // Manda una notificación del sistema (funciona aunque esta pestaña esté en
+  // segundo plano o el navegador minimizado) con el nombre del cliente.
+  const sendBrowserNotification = order => {
+    if (!notifEnabledRef.current || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    try {
+      const orderNum = order.orderNumber ? order.orderNumber : order.id ? String(order.id).slice(-4) : '----';
+      const n = new Notification(`🌭 Nuevo pedido de ${order.customer}`, {
+        body: `Pedido #${orderNum} · $${order.total} MXN`,
+        tag: order.firebaseKey,
+        requireInteraction: true
+      });
+      n.onclick = () => {
+        window.focus();
+        n.close();
+      };
+    } catch (e) {}
+  };
   useEffect(() => {
     newOrderKeysRef.current = newOrderKeys;
   }, [newOrderKeys]);
@@ -720,6 +771,8 @@ function App() {
             if (arrivedKeys.length > 0 && !firstOrdersLoad.current) {
               if (soundEnabledRef.current) playNotification();
               if ('vibrate' in navigator) navigator.vibrate([200, 100, 200, 100, 200]);
+              const arrivedOrders = loadedOrders.filter(o => arrivedKeys.includes(o.firebaseKey));
+              arrivedOrders.forEach(o => sendBrowserNotification(o));
               setNewOrderKeys(prev => new Set([...prev, ...arrivedKeys]));
               setHasNewOrder(true);
             }
@@ -906,6 +959,11 @@ function App() {
     const orderNum = order.orderNumber ? String(order.orderNumber) : order.id ? String(order.id).slice(-4) : '';
     return (order.customer || '').toLowerCase().includes(q) || (order.phone || '').toLowerCase().includes(q) || orderNum.toLowerCase().includes(q);
   };
+
+  // Texto del aviso rojo superior, con el/los nombre(s) del cliente en vez de un
+  // mensaje genérico — así se sabe de quién es el pedido de un vistazo.
+  const newOrderNames = orders.filter(o => newOrderKeys.has(o.firebaseKey)).map(o => o.customer || 'Cliente');
+  const newOrderBannerText = newOrderNames.length === 0 ? 'Toca aquí para quitar el aviso' : newOrderNames.length === 1 ? `¡Nuevo pedido de ${newOrderNames[0]}! Toca aquí para quitar el aviso` : newOrderNames.length <= 3 ? `¡Nuevos pedidos de ${newOrderNames.join(', ')}! Toca aquí para quitar el aviso` : `¡Nuevos pedidos de ${newOrderNames.slice(0, 2).join(', ')} y ${newOrderNames.length - 2} más! Toca aquí para quitar el aviso`;
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(PrintReport, {
     report: salesReport,
     generatedAt: now
@@ -916,7 +974,7 @@ function App() {
     className: "bg-red-600 text-white text-center text-xs sm:text-sm font-bold py-2 px-3 cursor-pointer shrink-0 animate-pulse flex items-center justify-center gap-2"
   }, /*#__PURE__*/React.createElement(BellIcon, {
     size: 14
-  }), " ¡Tienes un pedido nuevo! Toca aquí para quitar el aviso"), /*#__PURE__*/React.createElement("header", {
+  }), " ", newOrderBannerText), /*#__PURE__*/React.createElement("header", {
     className: "bg-slate-900 border-b border-slate-800 p-3 md:p-4 flex flex-col gap-2.5 shrink-0"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col md:flex-row md:justify-between md:items-center gap-2.5"
@@ -954,7 +1012,12 @@ function App() {
     size: 13
   }) : /*#__PURE__*/React.createElement(MoonIcon, {
     size: 13
-  }), " Pantalla activa")), /*#__PURE__*/React.createElement("div", {
+  }), " Pantalla activa"), /*#__PURE__*/React.createElement("button", {
+    onClick: toggleNotifications,
+    className: `flex items-center gap-1.5 text-[10px] sm:text-xs px-2.5 sm:px-3 py-1 rounded-full border whitespace-nowrap transition ${notifEnabled ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-slate-600 text-slate-400'}`
+  }, /*#__PURE__*/React.createElement(BellIcon, {
+    size: 13
+  }), " Notificaciones")), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap items-center justify-between md:justify-end gap-2.5 md:gap-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-left md:text-right"
