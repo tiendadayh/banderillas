@@ -31,7 +31,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -48,6 +48,7 @@
     window.db = getDatabase(app);
     window.ref = ref;
     window.onValue = onValue;
+    window.update = update;
     window.auth = getAuth(app);
     window.onAuthStateChanged = onAuthStateChanged;
     window.signInWithEmailAndPassword = signInWithEmailAndPassword;
@@ -102,6 +103,7 @@ function LoginScreen() {
 
 function AuthGate() {
   const [user, setUser] = useState(undefined);
+  const [role, setRole] = useState(() => localStorage.getItem(ROLE_STORAGE_KEY) || null);
   useEffect(() => {
     const check = setInterval(() => {
       if (window.auth && window.onAuthStateChanged) {
@@ -113,21 +115,105 @@ function AuthGate() {
   }, []);
   if (user === undefined) return React.createElement('div', { className: 'h-full w-full flex items-center justify-center bg-slate-950 text-slate-500 text-sm' }, 'Cargando...');
   if (user === null) return React.createElement(LoginScreen, null);
-  return React.createElement(KitchenBoard, null);
+  if (!role || !ROLES[role]) {
+    return React.createElement(RolePicker, {
+      onPick: (r) => { localStorage.setItem(ROLE_STORAGE_KEY, r); setRole(r); }
+    });
+  }
+  return React.createElement(KitchenBoard, {
+    role: role,
+    onChangeRole: () => { localStorage.removeItem(ROLE_STORAGE_KEY); setRole(null); }
+  });
 }
 
 const COLUMNS = [
   { id: 'pending', title: 'NUEVOS', emoji: '🆕', color: 'border-yellow-500', headerBg: 'bg-yellow-500/15', textColor: 'text-yellow-300' },
-  { id: 'preparing', title: 'PREPARANDO', emoji: '🍳', color: 'border-orange-500', headerBg: 'bg-orange-500/15', textColor: 'text-orange-300' }
+  { id: 'preparing', title: 'PREPARANDO', emoji: '🍳', color: 'border-orange-500', headerBg: 'bg-orange-500/15', textColor: 'text-orange-300' },
+  { id: 'shipping', title: 'EN CAMINO / LISTO', emoji: '🛵', color: 'border-blue-500', headerBg: 'bg-blue-500/15', textColor: 'text-blue-300' }
 ];
+const ROLES = {
+  cocina: { label: 'Cocina', emoji: '🍳', columnIds: ['pending', 'preparing'], showItems: true, showAddressPhone: false, canAdvance: true },
+  reparto: { label: 'Reparto', emoji: '🛵', columnIds: ['shipping'], showItems: false, showAddressPhone: true, canAdvance: false }
+};
+const NEXT_STATUS = { pending: 'preparing', preparing: 'shipping' };
+const ADVANCE_LABEL = { pending: '🍳 Empezar a preparar', preparing: '✅ Listo' };
+const ROLE_STORAGE_KEY = 'banderillas_kitchen_role';
 const ALERT_MIN = 10;
 
-function KitchenBoard() {
+function RolePicker({ onPick }) {
+  return React.createElement('div', { className: 'h-full w-full flex flex-col items-center justify-center bg-slate-950 gap-6 p-6' },
+    React.createElement('h1', { className: 'font-heading text-2xl sm:text-3xl font-black text-white text-center' }, '¿Qué vista quieres en esta pantalla?'),
+    React.createElement('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md' },
+      Object.entries(ROLES).map(([key, r]) =>
+        React.createElement('button', {
+          key: key,
+          onClick: () => onPick(key),
+          className: 'bg-slate-900 border-2 border-slate-700 hover:border-orange-500 rounded-2xl py-8 px-4 flex flex-col items-center gap-2 transition'
+        },
+          React.createElement('span', { className: 'text-5xl' }, r.emoji),
+          React.createElement('span', { className: 'font-heading text-lg font-black text-white' }, r.label)
+        )
+      )
+    ),
+    React.createElement('p', { className: 'text-xs text-slate-500 text-center max-w-xs' }, 'Esta pantalla recordará tu elección. Puedes cambiarla luego con el botón "Cambiar vista" en la esquina.')
+  );
+}
+
+function KitchenBoard({ role, onChangeRole }) {
+  const config = ROLES[role];
+  const activeColumns = COLUMNS.filter(c => config.columnIds.includes(c.id));
   const [orders, setOrders] = useState([]);
   const now = useNow(20000);
   const audioCtxRef = useRef(null);
   const prevKeysRef = useRef(new Set());
   const firstLoad = useRef(true);
+  const wakeLockRef = useRef(null);
+  const [wakeLockEnabled, setWakeLockEnabled] = useState(() => localStorage.getItem('banderillas_kitchen_wakelock') === 'true');
+
+  const requestWakeLock = async () => {
+    if (!('wakeLock' in navigator)) {
+      alert('Este navegador/dispositivo no soporta mantener la pantalla activa.');
+      return;
+    }
+    try {
+      wakeLockRef.current = await navigator.wakeLock.request('screen');
+      setWakeLockEnabled(true);
+    } catch (e) {
+      setWakeLockEnabled(false);
+    }
+  };
+  const releaseWakeLock = () => {
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release().catch(() => {});
+      wakeLockRef.current = null;
+    }
+    setWakeLockEnabled(false);
+  };
+  useEffect(() => {
+    localStorage.setItem('banderillas_kitchen_wakelock', wakeLockEnabled);
+  }, [wakeLockEnabled]);
+  // El navegador suelta el wake lock solo al minimizar/cambiar de pestaña;
+  // lo volvemos a pedir al regresar si se dejó activado.
+  useEffect(() => {
+    const reacquire = () => {
+      if (wakeLockEnabled && document.visibilityState === 'visible' && !wakeLockRef.current && 'wakeLock' in navigator) {
+        navigator.wakeLock.request('screen').then(s => { wakeLockRef.current = s; }).catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', reacquire);
+    return () => document.removeEventListener('visibilitychange', reacquire);
+  }, [wakeLockEnabled]);
+  useEffect(() => {
+    if (wakeLockEnabled) requestWakeLock();
+    return () => releaseWakeLock();
+  }, []);
+
+  const advanceOrder = (order, fromColId) => {
+    const nextStatus = NEXT_STATUS[fromColId];
+    if (!nextStatus || !window.db || !window.ref || !window.update || !order.firebaseKey) return;
+    const orderRef = window.ref(window.db, `pedidos/${order.firebaseKey}`);
+    window.update(orderRef, { status: nextStatus, statusUpdatedAt: new Date().toISOString() });
+  };
 
   const getAudioCtx = () => {
     if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
@@ -182,11 +268,21 @@ function KitchenBoard() {
 
   return React.createElement('div', { className: 'h-full flex flex-col' },
     React.createElement('header', { className: 'bg-slate-900 border-b border-slate-800 py-3 px-4 flex items-center justify-between shrink-0' },
-      React.createElement('h1', { className: 'font-heading text-xl sm:text-2xl font-black text-white' }, '🔥 COCINA — BANDERILLAS COREANAS'),
-      React.createElement('span', { className: 'text-sm sm:text-base text-slate-400 font-semibold' }, now && new Date(now).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }))
+      React.createElement('h1', { className: 'font-heading text-xl sm:text-2xl font-black text-white' }, `${config.emoji} ${config.label.toUpperCase()} — BANDERILLAS COREANAS`),
+      React.createElement('div', { className: 'flex items-center gap-3' },
+        React.createElement('span', { className: 'text-sm sm:text-base text-slate-400 font-semibold' }, now && new Date(now).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })),
+        React.createElement('button', {
+          onClick: () => { wakeLockEnabled ? releaseWakeLock() : requestWakeLock(); },
+          className: `flex items-center gap-1 text-[10px] sm:text-xs px-2.5 py-1 rounded-full border whitespace-nowrap transition ${wakeLockEnabled ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-slate-700 text-slate-500'}`
+        }, wakeLockEnabled ? '☀️ Pantalla activa' : '🌙 Pantalla libre'),
+        React.createElement('button', {
+          onClick: onChangeRole,
+          className: 'text-[10px] sm:text-xs text-slate-500 hover:text-slate-300 border border-slate-700 rounded-full px-2.5 py-1'
+        }, 'Cambiar vista')
+      )
     ),
-    React.createElement('div', { className: 'flex-1 overflow-hidden grid grid-cols-1 md:grid-cols-2 gap-3 p-3' },
-      COLUMNS.map(col => {
+    React.createElement('div', { className: `flex-1 overflow-hidden grid grid-cols-1 ${activeColumns.length > 1 ? 'md:grid-cols-2' : ''} gap-3 p-3` },
+      activeColumns.map(col => {
         const colOrders = orders.filter(o => o.status === col.id).sort((a, b) => a.id - b.id);
         return React.createElement('div', { key: col.id, className: `flex flex-col rounded-2xl border-2 ${col.color} ${col.headerBg} overflow-hidden` },
           React.createElement('div', { className: 'py-3 px-4 border-b-2 border-white/10 flex items-center justify-between' },
@@ -209,7 +305,7 @@ function KitchenBoard() {
                     React.createElement('span', { className: `text-sm sm:text-base font-bold ${delayed ? 'text-red-400' : 'text-slate-400'}` }, `hace ${waitMin} min`)
                   ),
                   React.createElement('p', { className: 'text-xl sm:text-2xl font-extrabold text-orange-300 mb-3' }, order.customer),
-                  React.createElement('div', { className: 'space-y-2' },
+                  config.showItems && React.createElement('div', { className: 'space-y-2' },
                     (order.cart || []).map((item, i) =>
                       React.createElement('div', { key: i, className: 'bg-black/30 rounded-xl p-2.5' },
                         React.createElement('p', { className: 'text-base sm:text-lg font-bold text-white' }, `Orden ${i + 1}: ${item.base}`),
@@ -220,9 +316,29 @@ function KitchenBoard() {
                       )
                     )
                   ),
+                  config.showAddressPhone && React.createElement('div', { className: 'space-y-2' },
+                    React.createElement('a', {
+                      href: `tel:${order.phone}`,
+                      className: 'flex items-center gap-2 text-lg sm:text-xl font-extrabold text-emerald-300'
+                    }, '📞 ', order.phone),
+                    order.deliveryType === 'delivery'
+                      ? React.createElement('p', { className: 'text-base sm:text-lg text-white font-semibold bg-black/30 rounded-xl p-2.5' }, '📍 ', order.address)
+                      : React.createElement('p', { className: 'text-base sm:text-lg text-white font-semibold bg-black/30 rounded-xl p-2.5' }, '🏪 Recoger en sucursal'),
+                    order.deliveryType === 'delivery' && order.address && React.createElement('a', {
+                      href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.address)}`,
+                      target: '_blank',
+                      rel: 'noopener noreferrer',
+                      className: 'flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-500 text-white text-lg sm:text-xl font-black py-3 rounded-xl'
+                    }, '🗺️ Abrir en Maps'),
+                    React.createElement('p', { className: 'text-base sm:text-lg font-black text-emerald-400' }, '$', order.total, ' MXN')
+                  ),
                   React.createElement('p', { className: 'text-xs sm:text-sm text-slate-500 mt-2' },
                     order.deliveryType === 'delivery' ? '🛵 A domicilio' : '🏪 Recoger en sucursal'
-                  )
+                  ),
+                  config.canAdvance && React.createElement('button', {
+                    onClick: () => advanceOrder(order, col.id),
+                    className: 'mt-3 w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-lg sm:text-xl font-black py-3 rounded-xl'
+                  }, ADVANCE_LABEL[col.id])
                 );
               })
           )

@@ -550,6 +550,27 @@ function App() {
   useEffect(() => {
     notifEnabledRef.current = notifEnabled;
   }, [notifEnabled]);
+
+  // Aviso por VOZ: no requiere ningún permiso del navegador (a diferencia de las
+  // notificaciones del sistema), así que funciona siempre, sin pedir nada nunca.
+  // Queda activado por defecto para que la primera vez ya funcione solo.
+  const [ttsEnabled, setTtsEnabled] = useState(() => localStorage.getItem('banderillas_tts_enabled') !== 'false');
+  const ttsEnabledRef = useRef(ttsEnabled);
+  useEffect(() => {
+    ttsEnabledRef.current = ttsEnabled;
+    localStorage.setItem('banderillas_tts_enabled', ttsEnabled);
+  }, [ttsEnabled]);
+  const speakOrder = order => {
+    if (!ttsEnabledRef.current || typeof window.speechSynthesis === 'undefined') return;
+    try {
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(`Nuevo pedido de ${order.customer}`);
+      utter.lang = 'es-MX';
+      utter.rate = 0.95;
+      utter.volume = 1;
+      window.speechSynthesis.speak(utter);
+    } catch (e) {}
+  };
   const toggleNotifications = async () => {
     if (typeof Notification === 'undefined') {
       alert('Este navegador no soporta notificaciones.');
@@ -692,12 +713,21 @@ function App() {
     return audioCtxRef.current;
   };
 
-  // Desbloquea el audio con el primer toque/clic en la pantalla: los navegadores
-  // no dejan sonar nada si nunca hubo una interacción del usuario en la página.
+  // Desbloquea el audio Y la voz con el primer toque/clic en la pantalla: los
+  // navegadores no dejan sonar/hablar nada si nunca hubo una interacción del
+  // usuario en la página.
   useEffect(() => {
     const unlockAudio = () => {
       const ctx = getAudioCtx();
       if (ctx.state === 'suspended') ctx.resume();
+      if (typeof window.speechSynthesis !== 'undefined' && !window.__ttsUnlocked) {
+        try {
+          const warm = new SpeechSynthesisUtterance(' ');
+          warm.volume = 0;
+          window.speechSynthesis.speak(warm);
+          window.__ttsUnlocked = true;
+        } catch (e) {}
+      }
     };
     document.addEventListener('click', unlockAudio);
     document.addEventListener('touchstart', unlockAudio);
@@ -772,7 +802,10 @@ function App() {
               if (soundEnabledRef.current) playNotification();
               if ('vibrate' in navigator) navigator.vibrate([200, 100, 200, 100, 200]);
               const arrivedOrders = loadedOrders.filter(o => arrivedKeys.includes(o.firebaseKey));
-              arrivedOrders.forEach(o => sendBrowserNotification(o));
+              arrivedOrders.forEach(o => {
+                sendBrowserNotification(o);
+                speakOrder(o);
+              });
               setNewOrderKeys(prev => new Set([...prev, ...arrivedKeys]));
               setHasNewOrder(true);
             }
@@ -1017,7 +1050,10 @@ function App() {
     className: `flex items-center gap-1.5 text-[10px] sm:text-xs px-2.5 sm:px-3 py-1 rounded-full border whitespace-nowrap transition ${notifEnabled ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-slate-600 text-slate-400'}`
   }, /*#__PURE__*/React.createElement(BellIcon, {
     size: 13
-  }), " Notificaciones")), /*#__PURE__*/React.createElement("div", {
+  }), " Notificaciones"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setTtsEnabled(!ttsEnabled),
+    className: `flex items-center gap-1.5 text-[10px] sm:text-xs px-2.5 sm:px-3 py-1 rounded-full border whitespace-nowrap transition ${ttsEnabled ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-slate-600 text-slate-400'}`
+  }, "🗣️ Voz")), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap items-center justify-between md:justify-end gap-2.5 md:gap-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-left md:text-right"

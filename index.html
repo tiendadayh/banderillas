@@ -241,6 +241,18 @@ const {
 const PHONE_NUMBER = "527442411773";
 const OPEN_HOUR = 13;
 const CLOSE_HOUR = 20;
+// Zonas de cobertura de delivery: edita este arreglo con las colonias/zonas
+// reales a las que sí llegas. El cliente las elige en un menú desplegable.
+const DELIVERY_ZONES = [
+  "Centro",
+  "Costa Azul",
+  "Progreso",
+  "Icacos",
+  "Farallón / Diamante",
+  "Renacimiento",
+  "Otra zona (fuera de las anteriores)"
+];
+const OUT_OF_ZONE_OPTION = "Otra zona (fuera de las anteriores)";
 const PLACEHOLDER_FOOD = "https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&w=400&q=80";
 const PLACEHOLDER_DRINK = "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&q=80";
 const playSound = type => {
@@ -503,6 +515,7 @@ function CartModal({
   customerName,
   customerPhone,
   deliveryAddress,
+  deliveryZone,
   paymentMethod,
   validationErrors,
   onClose,
@@ -511,6 +524,7 @@ function CartModal({
   setCustomerName,
   setCustomerPhone,
   setDeliveryAddress,
+  setDeliveryZone,
   setPaymentMethod,
   setDeliveryType
 }) {
@@ -683,7 +697,26 @@ function CartModal({
     className: `w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 transition-all ${validationErrors.deliveryAddress ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20' : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'}`
   }), validationErrors.deliveryAddress && /*#__PURE__*/React.createElement("span", {
     className: "text-[10px] text-red-400 mt-1 block"
-  }, "Ingresa tu dirección")))), /*#__PURE__*/React.createElement("div", {
+  }, "Ingresa tu dirección")))), deliveryType === 'delivery' && /*#__PURE__*/React.createElement("div", {
+    className: "mt-2"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-bold text-slate-200 block mb-1.5"
+  }, "Zona de entrega ", /*#__PURE__*/React.createElement("span", {
+    className: "text-orange-400"
+  }, "*")), /*#__PURE__*/React.createElement("select", {
+    value: deliveryZone,
+    onChange: e => setDeliveryZone(e.target.value),
+    className: `w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-1 transition-all ${validationErrors.deliveryZone ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20' : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'}`
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Selecciona tu zona..."), ...DELIVERY_ZONES.map(z => /*#__PURE__*/React.createElement("option", {
+    key: z,
+    value: z
+  }, z))), validationErrors.deliveryZone && /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] text-red-400 mt-1 block"
+  }, "Selecciona tu zona"), deliveryZone === OUT_OF_ZONE_OPTION && /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] text-amber-400 mt-1 block"
+  }, "⚠️ Fuera de nuestra zona habitual: podría tardar más o tener costo extra, te confirmamos por WhatsApp.")), /*#__PURE__*/React.createElement("div", {
     className: "flex-shrink-0 pt-3 border-t border-white/10 mt-2 bg-slate-950/90 space-y-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "space-y-1"
@@ -816,6 +849,7 @@ function App() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [deliveryZone, setDeliveryZone] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Efectivo');
   const [validationErrors, setValidationErrors] = useState({});
   const [isOpen, setIsOpen] = useState(true);
@@ -975,10 +1009,15 @@ function App() {
     if (!customerName.trim()) errors.customerName = true;
     if (!customerPhone.trim() || customerPhone.length < 8) errors.customerPhone = true;
     if (deliveryType === 'delivery' && !deliveryAddress.trim()) errors.deliveryAddress = true;
+    if (deliveryType === 'delivery' && !deliveryZone) errors.deliveryZone = true;
     setValidationErrors(errors);
     if (Object.keys(errors).length > 0) {
       showToast('⚠️ Revisa los campos requeridos marcados en rojo');
       return;
+    }
+    if (deliveryType === 'delivery' && deliveryZone === OUT_OF_ZONE_OPTION) {
+      const continuar = window.confirm('Tu zona podría estar fuera de nuestra cobertura habitual de entrega. Podemos tardar más o tener un costo extra. ¿Deseas continuar y que te confirmemos por WhatsApp?');
+      if (!continuar) return;
     }
     playSound('success');
 
@@ -1000,6 +1039,7 @@ function App() {
       phone: customerPhone.trim(),
       deliveryType,
       address: deliveryAddress.trim(),
+      zone: deliveryType === 'delivery' ? deliveryZone : '',
       paymentMethod,
       cart,
       total: cart.reduce((a, b) => a + b.price, 0),
@@ -1031,6 +1071,7 @@ function App() {
     message += `⏱️ *Tiempo Estimado:* ${deliveryType === 'delivery' ? '30-45 min' : '15-20 min'}\n`;
     if (deliveryType === 'delivery' && deliveryAddress.trim()) {
       message += `🏠 *Dirección:* ${deliveryAddress.trim()}\n`;
+      message += `📌 *Zona:* ${deliveryZone}\n`;
     }
     message += `\n`;
     cart.forEach((item, index) => {
@@ -1343,6 +1384,7 @@ function App() {
     customerName: customerName,
     customerPhone: customerPhone,
     deliveryAddress: deliveryAddress,
+    deliveryZone: deliveryZone,
     paymentMethod: paymentMethod,
     validationErrors: validationErrors,
     onClose: () => {
@@ -1354,6 +1396,7 @@ function App() {
     setCustomerName: setCustomerName,
     setCustomerPhone: setCustomerPhone,
     setDeliveryAddress: setDeliveryAddress,
+    setDeliveryZone: setDeliveryZone,
     setPaymentMethod: setPaymentMethod,
     setDeliveryType: setDeliveryType
   }));
