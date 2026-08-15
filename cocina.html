@@ -103,7 +103,6 @@ function LoginScreen() {
 
 function AuthGate() {
   const [user, setUser] = useState(undefined);
-  const [role, setRole] = useState(() => localStorage.getItem(ROLE_STORAGE_KEY) || null);
   useEffect(() => {
     const check = setInterval(() => {
       if (window.auth && window.onAuthStateChanged) {
@@ -115,57 +114,29 @@ function AuthGate() {
   }, []);
   if (user === undefined) return React.createElement('div', { className: 'h-full w-full flex items-center justify-center bg-slate-950 text-slate-500 text-sm' }, 'Cargando...');
   if (user === null) return React.createElement(LoginScreen, null);
-  if (!role || !ROLES[role]) {
-    return React.createElement(RolePicker, {
-      onPick: (r) => { localStorage.setItem(ROLE_STORAGE_KEY, r); setRole(r); }
-    });
-  }
-  return React.createElement(KitchenBoard, {
-    role: role,
-    onChangeRole: () => { localStorage.removeItem(ROLE_STORAGE_KEY); setRole(null); }
-  });
+  return React.createElement(KitchenBoard, { role: 'cocina' });
 }
 
 const COLUMNS = [
   { id: 'pending', title: 'NUEVOS', emoji: '🆕', color: 'border-yellow-500', headerBg: 'bg-yellow-500/15', textColor: 'text-yellow-300' },
   { id: 'preparing', title: 'PREPARANDO', emoji: '🍳', color: 'border-orange-500', headerBg: 'bg-orange-500/15', textColor: 'text-orange-300' },
-  { id: 'shipping', title: 'EN CAMINO / LISTO', emoji: '🛵', color: 'border-blue-500', headerBg: 'bg-blue-500/15', textColor: 'text-blue-300' }
+  { id: 'shipping', title: 'REPARTO Y ENTREGA', emoji: '🛵', color: 'border-blue-500', headerBg: 'bg-blue-500/15', textColor: 'text-blue-300' }
 ];
 const ROLES = {
-  cocina: { label: 'Cocina', emoji: '🍳', columnIds: ['pending', 'preparing'], showItems: true, showAddressPhone: false, canAdvance: true },
-  reparto: { label: 'Reparto', emoji: '🛵', columnIds: ['shipping'], showItems: false, showAddressPhone: true, canAdvance: true }
+  cocina: { label: 'Cocina', emoji: '🍳', columnIds: ['preparing', 'shipping'], canAdvance: true }
 };
 const NEXT_STATUS = { pending: 'preparing', preparing: 'shipping', shipping: 'completed' };
 const ADVANCE_LABEL = { pending: '📞 Aceptar y Avisar', preparing: '🚚 Enviar / Avisar', shipping: '✅ Entregado y Avisar' };
-const ROLE_STORAGE_KEY = 'banderillas_kitchen_role';
 const ALERT_MIN = 10;
 
-function RolePicker({ onPick }) {
-  return React.createElement('div', { className: 'h-full w-full flex flex-col items-center justify-center bg-slate-950 gap-6 p-6' },
-    React.createElement('h1', { className: 'font-heading text-2xl sm:text-3xl font-black text-white text-center' }, '¿Qué vista quieres en esta pantalla?'),
-    React.createElement('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md' },
-      Object.entries(ROLES).map(([key, r]) =>
-        React.createElement('button', {
-          key: key,
-          onClick: () => onPick(key),
-          className: 'bg-slate-900 border-2 border-slate-700 hover:border-orange-500 rounded-2xl py-8 px-4 flex flex-col items-center gap-2 transition'
-        },
-          React.createElement('span', { className: 'text-5xl' }, r.emoji),
-          React.createElement('span', { className: 'font-heading text-lg font-black text-white' }, r.label)
-        )
-      )
-    ),
-    React.createElement('p', { className: 'text-xs text-slate-500 text-center max-w-xs' }, 'Esta pantalla recordará tu elección. Puedes cambiarla luego con el botón "Cambiar vista" en la esquina.')
-  );
-}
 
-function KitchenBoard({ role, onChangeRole }) {
+function KitchenBoard({ role }) {
   const config = ROLES[role];
   const activeColumns = COLUMNS.filter(c => config.columnIds.includes(c.id));
   const [orders, setOrders] = useState([]);
   const now = useNow(20000);
   const audioCtxRef = useRef(null);
-  const prevKeysRef = useRef(new Set());
+  const prevStatusRef = useRef({});
   const firstLoad = useRef(true);
   const wakeLockRef = useRef(null);
   const [wakeLockEnabled, setWakeLockEnabled] = useState(() => localStorage.getItem('banderillas_kitchen_wakelock') === 'true');
@@ -195,9 +166,10 @@ function KitchenBoard({ role, onChangeRole }) {
     } catch (e) {}
   };
   const STATUS_ANNOUNCE = {
-    pending: order => order.deliveryType === 'delivery'
-      ? `Nuevo pedido de ${order.customer}, va a domicilio, a ${order.address}`
-      : `Nuevo pedido de ${order.customer}, para recoger en tienda`
+    preparing: order => `La solicitud de ${order.customer} fue aceptada, tenemos nuevo pedido`,
+    shipping: order => order.deliveryType === 'delivery'
+      ? `El pedido de ${order.customer} pasó a reparto, va a domicilio`
+      : `El pedido de ${order.customer} pasó a reparto, listo para recoger en tienda`
   };
 
   // Igual que en admin.html: los navegadores no dejan que la página hable
@@ -332,17 +304,23 @@ function KitchenBoard({ role, onChangeRole }) {
         window.onValue(ordersRef, snapshot => {
           const data = snapshot.val();
           const loaded = data ? Object.keys(data).map(k => ({ firebaseKey: k, ...data[k] })) : [];
-          const currentKeys = new Set(loaded.map(o => o.firebaseKey));
-          const arrived = [...currentKeys].filter(k => !prevKeysRef.current.has(k));
-          if (arrived.length > 0 && !firstLoad.current) {
-            beep();
-            if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
-            arrived.forEach(k => {
-              const arrivedOrder = loaded.find(o => o.firebaseKey === k);
-              if (arrivedOrder && arrivedOrder.status === 'pending') speakOrder(arrivedOrder, STATUS_ANNOUNCE.pending(arrivedOrder));
+          if (!firstLoad.current) {
+            let announced = false;
+            loaded.forEach(o => {
+              const prevStatus = prevStatusRef.current[o.firebaseKey];
+              if (prevStatus && prevStatus !== o.status && STATUS_ANNOUNCE[o.status]) {
+                announced = true;
+                speakOrder(o, STATUS_ANNOUNCE[o.status](o));
+              }
             });
+            if (announced) {
+              beep();
+              if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+            }
           }
-          prevKeysRef.current = currentKeys;
+          const statusMap = {};
+          loaded.forEach(o => { statusMap[o.firebaseKey] = o.status; });
+          prevStatusRef.current = statusMap;
           firstLoad.current = false;
           setOrders(loaded);
         });
@@ -363,11 +341,7 @@ function KitchenBoard({ role, onChangeRole }) {
         React.createElement('button', {
           onClick: () => setTtsEnabled(v => !v),
           className: `flex items-center gap-1 text-[10px] sm:text-xs px-2.5 py-1 rounded-full border whitespace-nowrap transition ${ttsEnabled ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-slate-700 text-slate-500'}`
-        }, ttsEnabled ? '🔊 Voz activa' : '🔇 Voz apagada'),
-        React.createElement('button', {
-          onClick: onChangeRole,
-          className: 'text-[10px] sm:text-xs text-slate-500 hover:text-slate-300 border border-slate-700 rounded-full px-2.5 py-1'
-        }, 'Cambiar vista')
+        }, ttsEnabled ? '🔊 Voz activa' : '🔇 Voz apagada')
       )
     ),
     React.createElement('div', { className: `flex-1 overflow-hidden grid grid-cols-1 ${activeColumns.length > 1 ? 'md:grid-cols-2' : ''} gap-3 p-3` },
@@ -394,7 +368,7 @@ function KitchenBoard({ role, onChangeRole }) {
                     React.createElement('span', { className: `text-sm sm:text-base font-bold ${delayed ? 'text-red-400' : 'text-slate-400'}` }, `hace ${waitMin} min`)
                   ),
                   React.createElement('p', { className: 'text-xl sm:text-2xl font-extrabold text-orange-300 mb-3' }, order.customer),
-                  config.showItems && React.createElement('div', { className: 'space-y-2' },
+                  col.id === 'preparing' && React.createElement('div', { className: 'space-y-2' },
                     (order.cart || []).map((item, i) =>
                       React.createElement('div', { key: i, className: 'bg-black/30 rounded-xl p-2.5' },
                         React.createElement('p', { className: 'text-base sm:text-lg font-bold text-white' }, `Orden ${i + 1}: ${item.base}`),
@@ -405,7 +379,7 @@ function KitchenBoard({ role, onChangeRole }) {
                       )
                     )
                   ),
-                  config.showAddressPhone && React.createElement('div', { className: 'space-y-2' },
+                  col.id === 'shipping' && React.createElement('div', { className: 'space-y-2' },
                     React.createElement('a', {
                       href: `tel:${order.phone}`,
                       className: 'flex items-center gap-2 text-lg sm:text-xl font-extrabold text-emerald-300'

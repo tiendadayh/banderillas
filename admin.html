@@ -55,7 +55,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, onValue, update, remove, push, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -76,6 +76,8 @@
     window.onValue = onValue;
     window.update = update;
     window.remove = remove;
+    window.push = push;
+    window.runTransaction = runTransaction;
     window.auth = auth;
     window.onAuthStateChanged = onAuthStateChanged;
     window.signInWithEmailAndPassword = signInWithEmailAndPassword;
@@ -990,6 +992,52 @@ function App() {
   const exportReportPDF = () => {
     window.print();
   };
+
+  // Crea un pedido de prueba con datos ficticios, con el mismo formato que
+  // usa index.html al guardar un pedido real, para poder probar el flujo
+  // completo (admin -> cocina -> reparto) sin tener que ordenar de verdad.
+  const [creatingTestOrder, setCreatingTestOrder] = useState(false);
+  const crearPedidoPrueba = async () => {
+    if (!window.db || !window.ref || !window.push) return;
+    setCreatingTestOrder(true);
+    try {
+      let orderNumber = null;
+      try {
+        if (window.runTransaction) {
+          const counterRef = window.ref(window.db, 'contador/pedidos');
+          const result = await window.runTransaction(counterRef, current => (current || 0) + 1);
+          orderNumber = result && result.committed ? result.snapshot.val() : null;
+        }
+      } catch (e) {
+        orderNumber = null;
+      }
+      const esDomicilio = Math.random() > 0.5;
+      const testOrder = {
+        id: Date.now(),
+        orderNumber: orderNumber,
+        customer: 'Cliente de Prueba',
+        phone: '7441234567',
+        deliveryType: esDomicilio ? 'delivery' : 'pickup',
+        address: esDomicilio ? 'Av. Costera Miguel Alemán 123' : '',
+        town: esDomicilio ? 'Acapulco Centro' : '',
+        location: null,
+        paymentMethod: 'efectivo',
+        cart: [{
+          base: 'Banderilla de Salchicha (x3)',
+          coatings: [{ name: 'Queso' }, { name: 'Tocino' }],
+          drink: 'Refresco de cola'
+        }],
+        total: 95,
+        status: 'pending',
+        timestamp: new Date().toISOString(),
+        esPrueba: true
+      };
+      const ordersRef = window.ref(window.db, 'pedidos');
+      window.push(ordersRef, testOrder);
+    } finally {
+      setCreatingTestOrder(false);
+    }
+  };
   const matchesSearch = order => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.trim().toLowerCase();
@@ -1057,7 +1105,11 @@ function App() {
   }), " Notificaciones"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setTtsEnabled(!ttsEnabled),
     className: `flex items-center gap-1.5 text-[10px] sm:text-xs px-2.5 sm:px-3 py-1 rounded-full border whitespace-nowrap transition ${ttsEnabled ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-slate-600 text-slate-400'}`
-  }, "🗣️ Voz")), /*#__PURE__*/React.createElement("div", {
+  }, "🗣️ Voz"), /*#__PURE__*/React.createElement("button", {
+    onClick: crearPedidoPrueba,
+    disabled: creatingTestOrder,
+    className: "flex items-center gap-1.5 text-[10px] sm:text-xs px-2.5 sm:px-3 py-1 rounded-full border border-purple-500 text-purple-300 bg-purple-500/10 whitespace-nowrap transition disabled:opacity-50"
+  }, creatingTestOrder ? "Creando..." : "🧪 Pedido de prueba")), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap items-center justify-between md:justify-end gap-2.5 md:gap-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-left md:text-right"
