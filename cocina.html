@@ -26,8 +26,8 @@
     .pulse-ring { animation: pulseRing 1.8s infinite; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 h-[100dvh] overflow-hidden">
-  <div id="root" class="h-full"></div>
+<body class="bg-slate-950 text-slate-100 min-h-screen overflow-x-hidden">
+  <div id="root" class="min-h-screen"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -90,7 +90,7 @@ function LoginScreen() {
     }
   };
 
-  return React.createElement('div', { className: 'h-full w-full flex items-center justify-center bg-slate-950 p-4' },
+  return React.createElement('div', { className: 'min-h-screen w-full flex items-center justify-center bg-slate-950 p-4' },
     React.createElement('form', { onSubmit: handleLogin, className: 'bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-sm space-y-4' },
       React.createElement('h1', { className: 'font-heading text-lg font-black text-white text-center' }, '🔥 Cocina — Acceso'),
       React.createElement('input', { type: 'email', value: email, onChange: e => setEmail(e.target.value), placeholder: 'Correo', autoFocus: true, className: 'w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white' }),
@@ -112,7 +112,7 @@ function AuthGate() {
     }, 300);
     return () => clearInterval(check);
   }, []);
-  if (user === undefined) return React.createElement('div', { className: 'h-full w-full flex items-center justify-center bg-slate-950 text-slate-500 text-sm' }, 'Cargando...');
+  if (user === undefined) return React.createElement('div', { className: 'min-h-screen w-full flex items-center justify-center bg-slate-950 text-slate-500 text-base' }, 'Cargando...');
   if (user === null) return React.createElement(LoginScreen, null);
   return React.createElement(KitchenBoard, { role: 'cocina' });
 }
@@ -329,8 +329,8 @@ function KitchenBoard({ role }) {
     return () => clearInterval(check);
   }, []);
 
-  return React.createElement('div', { className: 'h-full flex flex-col' },
-    React.createElement('header', { className: 'bg-slate-900 border-b border-slate-800 py-3 px-4 flex items-center justify-between shrink-0' },
+  return React.createElement('div', { className: 'min-h-screen flex flex-col' },
+    React.createElement('header', { className: 'sticky top-0 z-20 bg-slate-900/95 backdrop-blur border-b border-slate-800 py-3 px-4 flex flex-wrap items-center justify-between gap-2 shrink-0' },
       React.createElement('h1', { className: 'font-heading text-xl sm:text-2xl font-black text-white' }, `${config.emoji} ${config.label.toUpperCase()} — BANDERILLAS COREANAS`),
       React.createElement('div', { className: 'flex items-center gap-3' },
         React.createElement('span', { className: 'text-sm sm:text-base text-slate-400 font-semibold' }, now && new Date(now).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })),
@@ -344,17 +344,17 @@ function KitchenBoard({ role }) {
         }, ttsEnabled ? '🔊 Voz activa' : '🔇 Voz apagada')
       )
     ),
-    React.createElement('div', { className: `flex-1 overflow-hidden grid grid-cols-1 ${activeColumns.length > 1 ? 'md:grid-cols-2' : ''} gap-3 p-3` },
+    React.createElement('div', { className: `flex-1 grid grid-cols-1 ${activeColumns.length > 1 ? 'md:grid-cols-2' : ''} gap-3 p-3 items-start` },
       activeColumns.map(col => {
         const colOrders = orders.filter(o => o.status === col.id).sort((a, b) => a.id - b.id);
-        return React.createElement('div', { key: col.id, className: `flex flex-col rounded-2xl border-2 ${col.color} ${col.headerBg} overflow-hidden` },
-          React.createElement('div', { className: 'py-3 px-4 border-b-2 border-white/10 flex items-center justify-between' },
+        return React.createElement('div', { key: col.id, className: `flex flex-col rounded-2xl border-2 ${col.color} ${col.headerBg}` },
+          React.createElement('div', { className: 'sticky top-[60px] z-10 py-3 px-4 border-b-2 border-white/10 flex items-center justify-between rounded-t-2xl backdrop-blur bg-slate-950/40' },
             React.createElement('h2', { className: `font-heading text-2xl sm:text-3xl font-black ${col.textColor}` }, `${col.emoji} ${col.title}`),
             React.createElement('span', { className: 'bg-black/40 text-white text-xl font-black w-12 h-12 rounded-full flex items-center justify-center' }, colOrders.length)
           ),
-          React.createElement('div', { className: 'flex-1 overflow-y-auto no-scrollbar p-3 space-y-3' },
+          React.createElement('div', { className: 'p-3 space-y-3' },
             colOrders.length === 0
-              ? React.createElement('div', { className: 'h-full flex items-center justify-center text-slate-600 text-lg sm:text-xl font-bold' }, 'Sin pedidos aquí')
+              ? React.createElement('div', { className: 'py-16 flex items-center justify-center text-slate-600 text-lg sm:text-xl font-bold' }, 'Sin pedidos aquí')
               : colOrders.map(order => {
                 const waitMin = minutesSince(order.timestamp, now);
                 const delayed = col.id === 'pending' && waitMin >= ALERT_MIN;
@@ -371,11 +371,11 @@ function KitchenBoard({ role }) {
                   col.id === 'preparing' && React.createElement('div', { className: 'space-y-2' },
                     (order.cart || []).map((item, i) =>
                       React.createElement('div', { key: i, className: 'bg-black/30 rounded-xl p-2.5' },
-                        React.createElement('p', { className: 'text-base sm:text-lg font-bold text-white' }, `Orden ${i + 1}: ${item.base}`),
-                        React.createElement('ul', { className: 'text-sm sm:text-base text-slate-300 pl-4 list-disc' },
+                        React.createElement('p', { className: 'text-lg sm:text-xl font-bold text-white' }, `Orden ${i + 1}: ${item.base}`),
+                        React.createElement('ul', { className: 'text-base sm:text-lg text-slate-300 pl-4 list-disc' },
                           (item.coatings || []).map((c, ci) => React.createElement('li', { key: ci }, c.name))
                         ),
-                        item.drink && React.createElement('p', { className: 'text-sm sm:text-base text-amber-300 mt-1' }, `🥤 ${item.drink}`)
+                        item.drink && React.createElement('p', { className: 'text-base sm:text-lg text-amber-300 mt-1' }, `🥤 ${item.drink}`)
                       )
                     )
                   ),
@@ -400,7 +400,7 @@ function KitchenBoard({ role }) {
                     }, '🗺️ Abrir en Maps'),
                     React.createElement('p', { className: 'text-base sm:text-lg font-black text-emerald-400' }, '$', order.total, ' MXN')
                   ),
-                  React.createElement('p', { className: 'text-xs sm:text-sm text-slate-500 mt-2' },
+                  React.createElement('p', { className: 'text-sm sm:text-base text-slate-500 mt-2' },
                     order.deliveryType === 'delivery' ? '🛵 A domicilio' : '🏪 Recoger en sucursal'
                   ),
                   config.canAdvance && React.createElement('button', {
