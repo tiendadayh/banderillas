@@ -564,17 +564,34 @@ function App() {
   }, [ttsEnabled]);
   const speakOrder = order => {
     if (!ttsEnabledRef.current || typeof window.speechSynthesis === 'undefined') return;
+    const destino = order.deliveryType === 'delivery'
+      ? (order.address ? `a domicilio, en ${order.address}` : 'a domicilio')
+      : 'para recoger en tienda';
+    const texto = `Nuevo pedido de ${order.customer}, ${destino}`;
+    const hablar = () => {
+      try {
+        const utter = new SpeechSynthesisUtterance(texto);
+        utter.lang = 'es-MX';
+        utter.rate = 0.95;
+        utter.volume = 1;
+        window.speechSynthesis.speak(utter);
+      } catch (e) {}
+    };
     try {
       // Chrome/Android a veces deja el motor de voz "atorado" en pausa tras
       // estar un rato inactivo; cancelar y reanudar antes de hablar evita
       // que el mensaje se pierda en silencio.
       window.speechSynthesis.cancel();
       window.speechSynthesis.resume();
-      const utter = new SpeechSynthesisUtterance(`Nuevo pedido de ${order.customer}`);
-      utter.lang = 'es-MX';
-      utter.rate = 0.95;
-      utter.volume = 1;
-      window.speechSynthesis.speak(utter);
+      hablar();
+      // Si el navegador no empezó a hablar en medio segundo (motor de voz
+      // atorado), se reintenta una vez más.
+      setTimeout(() => {
+        if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+          window.speechSynthesis.cancel();
+          hablar();
+        }
+      }, 500);
     } catch (e) {}
   };
   const toggleNotifications = async () => {
@@ -900,6 +917,22 @@ function App() {
     acknowledgeOrder(order.firebaseKey);
     setHasNewOrder(false);
   };
+  const cancelOrder = order => {
+    const reason = window.prompt(`¿Por qué se cancela el pedido de ${order.customer}? (motivo)`);
+    if (reason === null) return; // se cerró el diálogo sin confirmar
+    if (!window.db || !window.ref || !window.update || !order.firebaseKey) return;
+    const { firebaseKey, ...orderData } = order;
+    const updates = {};
+    updates[`pedidos_historial/${firebaseKey}`] = {
+      ...orderData,
+      status: 'cancelled',
+      cancelReason: reason.trim() || 'Sin motivo especificado',
+      archivedAt: new Date().toISOString()
+    };
+    updates[`pedidos/${firebaseKey}`] = null;
+    window.update(window.ref(window.db), updates);
+    acknowledgeOrder(order.firebaseKey);
+  };
   const deleteOrder = firebaseKey => {
     if (window.confirm('¿Seguro que deseas eliminar este pedido del historial?')) {
       if (window.db && window.ref && window.remove && firebaseKey) {
@@ -944,8 +977,22 @@ function App() {
   const totalSales = orders.filter(o => o.status === 'completed').reduce((sum, o) => sum + (o.total || 0), 0);
   const pendingCount = orders.filter(o => o.status === 'pending').length;
 
+  // --- Clientes frecuentes: cuenta cuántos pedidos tiene cada teléfono
+  // (activos + historial), para marcar en la tarjeta a los que repiten.
+  const phoneOrderCounts = useMemo(() => {
+    const counts = {};
+    [...orders, ...historyOrders].forEach(o => {
+      if (!o.phone) return;
+      const key = o.phone.replace(/\D/g, '');
+      if (!key) return;
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return counts;
+  }, [orders, historyOrders]);
+
   // --- Reportes: ventas por periodo y combos/empanizados más pedidos ---
-  const allSales = useMemo(() => [...orders.filter(o => o.status === 'completed'), ...historyOrders], [orders, historyOrders]);
+  const allSales = useMemo(() => [...orders.filter(o => o.status === 'completed'), ...historyOrders.filter(o => o.status !== 'cancelled')], [orders, historyOrders]);
+  const cancelledCount = useMemo(() => historyOrders.filter(o => o.status === 'cancelled').length, [historyOrders]);
   const salesReport = useMemo(() => {
     const nowD = new Date();
     const startOfToday = new Date(nowD.getFullYear(), nowD.getMonth(), nowD.getDate());
@@ -982,9 +1029,10 @@ function App() {
       mes,
       topBases,
       topCoatings,
-      totalOrdenes: allSales.length
+      totalOrdenes: allSales.length,
+      cancelados: cancelledCount
     };
-  }, [allSales]);
+  }, [allSales, cancelledCount]);
 
   // Genera el PDF usando el diálogo de impresión del navegador sobre una
   // vista especial (#print-report) — no depende de ninguna librería externa,
@@ -1186,6 +1234,9 @@ function App() {
       const isNew = newOrderKeys.has(order.firebaseKey);
       const waitMinutes = minutesSince(order.timestamp, now);
       const isDelayed = col.id === 'pending' && waitMinutes >= PENDING_ALERT_MINUTES;
+      const phoneKey = order.phone ? order.phone.replace(/\D/g, '') : '';
+      const orderCount = phoneKey ? (phoneOrderCounts[phoneKey] || 0) : 0;
+      const isFrequent = orderCount > 1;
       return /*#__PURE__*/React.createElement("div", {
         key: order.firebaseKey || order.id,
         onClick: () => isNew && acknowledgeOrder(order.firebaseKey),
@@ -1221,7 +1272,9 @@ function App() {
         className: "flex items-center gap-1 text-xs text-orange-400 hover:underline w-fit"
       }, /*#__PURE__*/React.createElement(PhoneIcon, {
         size: 11
-      }), " ", order.phone), order.popupBlocked && /*#__PURE__*/React.createElement("span", {
+      }), " ", order.phone), isFrequent && /*#__PURE__*/React.createElement("span", {
+        className: "flex items-center gap-1 mt-1 text-[10px] font-bold text-purple-300 bg-purple-500/10 border border-purple-500/30 px-1.5 py-0.5 rounded w-fit"
+      }, "🔁 Cliente frecuente (", orderCount, "x)"), order.popupBlocked && /*#__PURE__*/React.createElement("span", {
         className: "flex items-center gap-1 mt-1 text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/30 px-1.5 py-0.5 rounded w-fit"
       }, /*#__PURE__*/React.createElement(AlertIcon, {
         size: 10
@@ -1287,6 +1340,15 @@ function App() {
         className: "flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 rounded-lg transition flex items-center justify-center gap-1.5"
       }, "Entregado y Avisar ", /*#__PURE__*/React.createElement(CheckCircleIcon, {
         size: 12
+      })), col.id !== 'completed' && /*#__PURE__*/React.createElement("button", {
+        onClick: e => {
+          e.stopPropagation();
+          cancelOrder(order);
+        },
+        title: "Cancelar pedido",
+        className: "px-3 bg-slate-800 hover:bg-red-600 text-slate-300 hover:text-white py-2 rounded-lg transition flex items-center justify-center"
+      }, /*#__PURE__*/React.createElement(XIcon, {
+        size: 14
       }))));
     })), col.id === 'completed' && colOrders.length > 0 && /*#__PURE__*/React.createElement("div", {
       className: "p-2 bg-black/20 border-t border-white/10"
@@ -1386,7 +1448,7 @@ function PrintReport({
       marginTop: '-10px',
       marginBottom: '20px'
     }
-  }, "Basado en ", report.totalOrdenes, " pedidos entregados (activos + archivados)."), /*#__PURE__*/React.createElement("h2", {
+  }, "Basado en ", report.totalOrdenes, " pedidos entregados (activos + archivados).", report.cancelados > 0 ? ` — ${report.cancelados} cancelados` : ""), /*#__PURE__*/React.createElement("h2", {
     style: {
       fontFamily: 'Poppins, sans-serif',
       fontSize: '13px',
@@ -1567,7 +1629,7 @@ function ReportsModal({
     className: "flex items-center justify-between mb-4"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400"
-  }, "Basado en ", report.totalOrdenes, " pedidos entregados (activos + archivados)."), /*#__PURE__*/React.createElement("button", {
+  }, "Basado en ", report.totalOrdenes, " pedidos entregados (activos + archivados).", report.cancelados > 0 ? ` — ${report.cancelados} cancelados` : ""), /*#__PURE__*/React.createElement("button", {
     onClick: onExportPDF,
     className: "flex items-center gap-1.5 text-[10px] font-bold text-slate-200 bg-slate-900/70 hover:bg-slate-800 border border-slate-700 hover:border-orange-500/50 px-2.5 py-1.5 rounded-lg transition shrink-0"
   }, /*#__PURE__*/React.createElement(DownloadIcon, {

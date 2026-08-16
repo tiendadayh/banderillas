@@ -240,18 +240,7 @@ const {
 } = React;
 const PHONE_NUMBER = "527442411773";
 const OPEN_HOUR = 13;
-const CLOSE_HOUR = 20;
-// Pueblos/colonias donde sí entregas: edita este arreglo con los lugares
-// reales a los que llegas. El cliente los elige en un menú desplegable
-// obligatorio, para no aceptar pedidos fuera de tu cobertura.
-const DELIVERY_TOWNS = [
-  "Centro",
-  "Costa Azul",
-  "Progreso",
-  "Icacos",
-  "Farallón / Diamante",
-  "Renacimiento"
-];
+const CLOSE_HOUR = 24;
 const PLACEHOLDER_FOOD = "https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&w=400&q=80";
 const PLACEHOLDER_DRINK = "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&q=80";
 const playSound = type => {
@@ -514,7 +503,6 @@ function CartModal({
   customerName,
   customerPhone,
   deliveryAddress,
-  deliveryTown,
   deliveryCoords,
   locatingGPS,
   paymentMethod,
@@ -526,7 +514,6 @@ function CartModal({
   setCustomerName,
   setCustomerPhone,
   setDeliveryAddress,
-  setDeliveryTown,
   setPaymentMethod,
   setDeliveryType
 }) {
@@ -704,24 +691,7 @@ function CartModal({
     onClick: onUseMyLocation,
     disabled: locatingGPS,
     className: `mt-1.5 w-full flex items-center justify-center gap-1.5 text-[11px] font-bold py-2 rounded-xl border transition-all active:scale-95 ${deliveryCoords ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-orange-500'}`
-  }, locatingGPS ? '📡 Obteniendo ubicación...' : deliveryCoords ? '✅ Ubicación precisa agregada (toca para actualizar)' : '📍 Usar mi ubicación actual')))), deliveryType === 'delivery' && /*#__PURE__*/React.createElement("div", {
-    className: "mt-2"
-  }, /*#__PURE__*/React.createElement("label", {
-    className: "text-xs font-bold text-slate-200 block mb-1.5"
-  }, "Pueblo de entrega ", /*#__PURE__*/React.createElement("span", {
-    className: "text-orange-400"
-  }, "*")), /*#__PURE__*/React.createElement("select", {
-    value: deliveryTown,
-    onChange: e => setDeliveryTown(e.target.value),
-    className: `w-full bg-slate-900 border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-1 transition-all ${validationErrors.deliveryTown ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500 bg-red-950/20' : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500'}`
-  }, /*#__PURE__*/React.createElement("option", {
-    value: ""
-  }, "Selecciona tu pueblo..."), ...DELIVERY_TOWNS.map(z => /*#__PURE__*/React.createElement("option", {
-    key: z,
-    value: z
-  }, z))), validationErrors.deliveryTown && /*#__PURE__*/React.createElement("span", {
-    className: "text-[10px] text-red-400 mt-1 block"
-  }, "Selecciona tu pueblo")), /*#__PURE__*/React.createElement("div", {
+  }, locatingGPS ? '📡 Obteniendo ubicación...' : deliveryCoords ? '✅ Ubicación precisa agregada (toca para actualizar)' : '📍 Usar mi ubicación actual')))), /*#__PURE__*/React.createElement("div", {
     className: "flex-shrink-0 pt-3 border-t border-white/10 mt-2 bg-slate-950/90 space-y-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "space-y-1"
@@ -854,7 +824,6 @@ function App() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [deliveryTown, setDeliveryTown] = useState('');
   const [deliveryCoords, setDeliveryCoords] = useState(null); // {lat, lng} — ubicación GPS precisa opcional
   const [locatingGPS, setLocatingGPS] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Efectivo');
@@ -1039,7 +1008,6 @@ function App() {
     if (!customerName.trim()) errors.customerName = true;
     if (!customerPhone.trim() || customerPhone.length < 8) errors.customerPhone = true;
     if (deliveryType === 'delivery' && !deliveryAddress.trim()) errors.deliveryAddress = true;
-    if (deliveryType === 'delivery' && !deliveryTown) errors.deliveryTown = true;
     setValidationErrors(errors);
     if (Object.keys(errors).length > 0) {
       showToast('⚠️ Revisa los campos requeridos marcados en rojo');
@@ -1065,7 +1033,6 @@ function App() {
       phone: customerPhone.trim(),
       deliveryType,
       address: deliveryAddress.trim(),
-      town: deliveryType === 'delivery' ? deliveryTown : '',
       location: deliveryType === 'delivery' && deliveryCoords ? deliveryCoords : null,
       paymentMethod,
       cart,
@@ -1098,7 +1065,6 @@ function App() {
     message += `⏱️ *Tiempo Estimado:* ${deliveryType === 'delivery' ? '30-45 min' : '15-20 min'}\n`;
     if (deliveryType === 'delivery' && deliveryAddress.trim()) {
       message += `🏠 *Dirección:* ${deliveryAddress.trim()}\n`;
-      message += `📌 *Pueblo:* ${deliveryTown}\n`;
       if (deliveryCoords) {
         message += `📍 *Ubicación GPS:* https://maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`;
       }
@@ -1135,7 +1101,6 @@ function App() {
     setCustomerName('');
     setCustomerPhone('');
     setDeliveryAddress('');
-    setDeliveryTown('');
     setDeliveryCoords(null);
     setValidationErrors({});
     setIsCartOpen(false);
@@ -1416,7 +1381,6 @@ function App() {
     customerName: customerName,
     customerPhone: customerPhone,
     deliveryAddress: deliveryAddress,
-    deliveryTown: deliveryTown,
     deliveryCoords: deliveryCoords,
     locatingGPS: locatingGPS,
     paymentMethod: paymentMethod,
@@ -1431,7 +1395,6 @@ function App() {
     setCustomerName: setCustomerName,
     setCustomerPhone: setCustomerPhone,
     setDeliveryAddress: setDeliveryAddress,
-    setDeliveryTown: setDeliveryTown,
     setPaymentMethod: setPaymentMethod,
     setDeliveryType: setDeliveryType
   }));

@@ -141,59 +141,6 @@ function KitchenBoard({ role }) {
   const wakeLockRef = useRef(null);
   const [wakeLockEnabled, setWakeLockEnabled] = useState(() => localStorage.getItem('banderillas_kitchen_wakelock') === 'true');
 
-  // Aviso por VOZ, igual que en el panel de administración: no requiere
-  // ningún permiso del navegador, así que funciona siempre. Activado por
-  // defecto para que suene solo la primera vez.
-  const [ttsEnabled, setTtsEnabled] = useState(() => localStorage.getItem('banderillas_kitchen_tts') !== 'false');
-  const ttsEnabledRef = useRef(ttsEnabled);
-  useEffect(() => {
-    ttsEnabledRef.current = ttsEnabled;
-    localStorage.setItem('banderillas_kitchen_tts', ttsEnabled);
-  }, [ttsEnabled]);
-  const speakOrder = (order, message) => {
-    if (!ttsEnabledRef.current || typeof window.speechSynthesis === 'undefined') return;
-    try {
-      // Chrome/Android a veces deja el motor de voz "atorado" en pausa tras
-      // estar un rato inactivo; cancelar y reanudar antes de hablar evita
-      // que el mensaje se pierda en silencio.
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.resume();
-      const utter = new SpeechSynthesisUtterance(message || `Nuevo pedido de ${order.customer}`);
-      utter.lang = 'es-MX';
-      utter.rate = 0.95;
-      utter.volume = 1;
-      window.speechSynthesis.speak(utter);
-    } catch (e) {}
-  };
-  const STATUS_ANNOUNCE = {
-    preparing: order => `La solicitud de ${order.customer} fue aceptada, tenemos nuevo pedido`,
-    shipping: order => order.deliveryType === 'delivery'
-      ? `El pedido de ${order.customer} pasó a reparto, va a domicilio`
-      : `El pedido de ${order.customer} pasó a reparto, listo para recoger en tienda`
-  };
-
-  // Igual que en admin.html: los navegadores no dejan que la página hable
-  // sola sin que antes haya habido un toque/clic del usuario. Con el primer
-  // toque en la pantalla "calentamos" el motor de voz con un mensaje mudo,
-  // así el primer aviso real de un pedido sí se alcanza a oír.
-  useEffect(() => {
-    const unlockTts = () => {
-      if (typeof window.speechSynthesis === 'undefined' || window.__ttsUnlocked) return;
-      try {
-        const warm = new SpeechSynthesisUtterance(' ');
-        warm.volume = 0;
-        window.speechSynthesis.speak(warm);
-        window.__ttsUnlocked = true;
-      } catch (e) {}
-    };
-    document.addEventListener('click', unlockTts);
-    document.addEventListener('touchstart', unlockTts);
-    return () => {
-      document.removeEventListener('click', unlockTts);
-      document.removeEventListener('touchstart', unlockTts);
-    };
-  }, []);
-
   const requestWakeLock = async () => {
     if (!('wakeLock' in navigator)) {
       alert('Este navegador/dispositivo no soporta mantener la pantalla activa.');
@@ -308,9 +255,8 @@ function KitchenBoard({ role }) {
             let announced = false;
             loaded.forEach(o => {
               const prevStatus = prevStatusRef.current[o.firebaseKey];
-              if (prevStatus && prevStatus !== o.status && STATUS_ANNOUNCE[o.status]) {
+              if (prevStatus && prevStatus !== o.status && (o.status === 'preparing' || o.status === 'shipping')) {
                 announced = true;
-                speakOrder(o, STATUS_ANNOUNCE[o.status](o));
               }
             });
             if (announced) {
@@ -337,11 +283,7 @@ function KitchenBoard({ role }) {
         React.createElement('button', {
           onClick: () => { wakeLockEnabled ? releaseWakeLock() : requestWakeLock(); },
           className: `flex items-center gap-1 text-[10px] sm:text-xs px-2.5 py-1 rounded-full border whitespace-nowrap transition ${wakeLockEnabled ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-slate-700 text-slate-500'}`
-        }, wakeLockEnabled ? '☀️ Pantalla activa' : '🌙 Pantalla libre'),
-        React.createElement('button', {
-          onClick: () => setTtsEnabled(v => !v),
-          className: `flex items-center gap-1 text-[10px] sm:text-xs px-2.5 py-1 rounded-full border whitespace-nowrap transition ${ttsEnabled ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-slate-700 text-slate-500'}`
-        }, ttsEnabled ? '🔊 Voz activa' : '🔇 Voz apagada')
+        }, wakeLockEnabled ? '☀️ Pantalla activa' : '🌙 Pantalla libre')
       )
     ),
     React.createElement('div', { className: `flex-1 grid grid-cols-1 ${activeColumns.length > 1 ? 'md:grid-cols-2' : ''} gap-3 p-3 items-start` },
