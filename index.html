@@ -33,34 +33,16 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 
   <style>
-    body {
-      perspective: 1200px;
-    }
-
-    @keyframes pulseGlow {
-      0%, 100% {
-        opacity: 0.3;
-        transform: scale(1);
-      }
-      50% {
-        opacity: 0.6;
-        transform: scale(1.03);
-      }
-    }
+    /* Nota de rendimiento: se quitó el "perspective" global del body.
+       Forzaba un contexto 3D en TODA la página (aunque solo se usa en la
+       foto de portada), lo cual hacía más lento el scroll en celulares. */
 
     .glow-effect {
-      animation: pulseGlow 4s infinite ease-in-out;
-    }
-
-    @keyframes neonGlow {
-      0%, 100% {
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 85, 0, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.4);
-        border-color: #ff5500;
-      }
-      50% {
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), 0 0 28px rgba(255, 106, 0, 0.85), inset 0 1px 3px rgba(255, 255, 255, 0.6);
-        border-color: #ff7700;
-      }
+      /* Antes esto se animaba sin parar (pulseGlow, infinito). Un círculo
+         grande con blur animando todo el tiempo es de lo más pesado que
+         hay para un celular. Se deja fijo (sin animación) y se ve casi
+         igual, pero ya no consume batería/CPU de forma continua. */
+      opacity: 0.4;
     }
 
     @keyframes popIn {
@@ -87,14 +69,16 @@
       background: linear-gradient(145deg, #131822, #080a0f);
       border: 2px solid #ff5500;
       border-radius: 9999px;
-      animation: neonGlow 2.5s infinite ease-in-out;
-      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      /* Antes el brillo (neonGlow) se animaba en bucle infinito cambiando
+         box-shadow sin parar, algo costoso de repintar constantemente.
+         Se deja el brillo fijo; solo cambia al tocar/hacer hover. */
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 85, 0, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
       cursor: pointer;
-      transform-style: preserve-3d;
     }
 
     .badge-header:hover {
-      transform: translateY(-4px) rotateX(8deg) scale(1.03);
+      transform: translateY(-4px) scale(1.03);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 35px rgba(255, 85, 0, 0.9);
     }
 
@@ -115,25 +99,30 @@
     }
 
     .card-3d-glass {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      /* Antes tenía backdrop-filter: blur(16px). Es el efecto "vidrio
+         esmerilado" que se ve muy bien, pero es de lo más caro que existe
+         para el procesador gráfico de un celular, sobre todo repetido en
+         ~20 tarjetas en pantalla y dentro de listas con scroll horizontal.
+         Se sube un poco la opacidad del fondo para que se siga viendo
+         "de vidrio" sin necesitar el desenfoque. */
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
       border-top: 1px solid rgba(255, 255, 255, 0.25);
       border-left: 1px solid rgba(255, 255, 255, 0.15);
       border-bottom: 1px solid rgba(0, 0, 0, 0.5);
       border-right: 1px solid rgba(0, 0, 0, 0.4);
       box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      transform-style: preserve-3d;
-      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, background 0.3s ease;
     }
 
     .card-3d-interactive {
-      transform-style: preserve-3d;
-      transition: all 0.3s ease;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
     .card-3d-interactive:hover {
-      transform: translateY(-6px) rotateX(6deg) rotateY(-4deg);
+      /* Se quitó el giro 3D (rotateX/rotateY): requería mantener toda la
+         página en un contexto 3D (perspective) solo para este detalle,
+         y en celular ni siquiera se ve (no hay "hover" real al tocar). */
+      transform: translateY(-6px);
       box-shadow: -10px 20px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(249, 115, 22, 0.2);
     }
 
@@ -187,14 +176,14 @@
         </div>
       </div>
 
-      <div class="relative flex justify-center" style="perspective: 1000px;">
+      <div class="relative flex justify-center">
         <div class="absolute -top-3 -right-3 z-20 bg-amber-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-full shadow-2xl border border-amber-200 transform rotate-6 hover:scale-110 transition-transform">
           ⭐ ¡3 Banderillas x Orden!
         </div>
 
         <div class="relative group w-full max-w-md card-3d-interactive">
           <div class="absolute -inset-1 bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl blur opacity-30 group-hover:opacity-70 transition duration-500"></div>
-          <img src="portada.jpg" alt="Portada Banderillas Coreanas" class="relative rounded-3xl border-t border-l border-white/20 object-cover w-full h-72 md:h-96 shadow-2xl" onError="this.src='https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&w=800&q=80'" />
+          <img src="portada.jpg" alt="Portada Banderillas Coreanas" class="relative rounded-3xl border-t border-l border-white/20 object-cover w-full h-72 md:h-96 shadow-2xl" loading="eager" fetchpriority="high" decoding="async" onError="this.src='https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&w=800&q=80'" />
         </div>
       </div>
     </div>
@@ -424,7 +413,9 @@ function SafeImage({
     src: imgSrc,
     alt: alt,
     className: className,
-    onError: handleError
+    onError: handleError,
+    loading: "lazy",
+    decoding: "async"
   });
 }
 function CoatingSelector({
@@ -1131,10 +1122,13 @@ function App() {
   }, "Ver Carrito"), /*#__PURE__*/React.createElement("span", {
     className: "text-sm font-black"
   }, "$", cartTotalPrice, " MXN"))), /*#__PURE__*/React.createElement("div", {
-    className: "w-full md:w-1/2 min-h-[340px] max-h-[45vh] md:max-h-none md:min-h-[520px] md:h-screen sticky top-0 md:relative z-30 bg-slate-900/90 backdrop-blur-xl flex flex-col items-center justify-center p-4 md:p-12 overflow-y-auto md:overflow-hidden border-b md:border-b-0 md:border-r border-white/10 shadow-xl md:shadow-none",
-    style: {
-      perspective: '1000px'
-    }
+    className: "w-full md:w-1/2 min-h-[340px] max-h-[45vh] md:max-h-none md:min-h-[520px] md:h-screen sticky top-0 md:relative z-30 bg-slate-950/95 flex flex-col items-center justify-center p-4 md:p-12 overflow-y-auto md:overflow-hidden border-b md:border-b-0 md:border-r border-white/10 shadow-xl md:shadow-none"
+    // Nota: antes tenía "backdrop-blur-xl" y "perspective: 1000px" en línea.
+    // Este panel queda pegado ("sticky") mientras el cliente hace scroll
+    // en el celular, así que un desenfoque aquí es de los efectos más
+    // pesados que existen: el navegador tiene que recalcularlo en cada
+    // cuadro del scroll. Se cambió a un fondo casi sólido (sin blur), que
+    // se ve prácticamente igual pero no traba el scroll.
   }, /*#__PURE__*/React.createElement("div", {
     className: "absolute w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-3xl glow-effect pointer-events-none"
   }), /*#__PURE__*/React.createElement("div", {
@@ -1171,7 +1165,7 @@ function App() {
       key: `${idx}-${animKey}`,
       className: "animate-pop w-full flex flex-col items-center relative"
     }, c.badge && /*#__PURE__*/React.createElement("span", {
-      className: "absolute top-1 right-1 z-20 bg-amber-400/95 backdrop-blur-md text-slate-950 text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-lg border border-amber-200"
+      className: "absolute top-1 right-1 z-20 bg-amber-400 text-slate-950 text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-lg border border-amber-200"
     }, c.badge), /*#__PURE__*/React.createElement(SafeImage, {
       src: c.image,
       alt: c.name,
@@ -1360,7 +1354,11 @@ function App() {
     onClick: saveFavorite,
     className: "bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-semibold px-4 py-2 rounded-xl transition-all transform border border-slate-700 text-slate-200 shadow-md hover:-translate-y-0.5"
   }, "★ Guardar"))), /*#__PURE__*/React.createElement("div", {
-    className: "fixed bottom-0 left-0 right-0 md:relative md:bottom-auto bg-slate-950/90 backdrop-blur-xl md:bg-transparent p-4 md:p-0 md:pt-4 border-t border-white/10 flex items-center justify-between gap-4 z-40 shadow-2xl md:shadow-none"
+    // Antes tenía "backdrop-blur-xl": al ser una barra fija en la parte
+    // baja de la pantalla en celular, el desenfoque se recalculaba en
+    // cada cuadro del scroll y contribuía a las trabadas. Fondo sólido
+    // en su lugar, mismo look.
+    className: "fixed bottom-0 left-0 right-0 md:relative md:bottom-auto bg-slate-950/95 md:bg-transparent p-4 md:p-0 md:pt-4 border-t border-white/10 flex items-center justify-between gap-4 z-40 shadow-2xl md:shadow-none"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
     className: "text-2xl md:text-3xl font-black text-orange-400 drop-shadow"
   }, "$", currentPrice, " MXN"), /*#__PURE__*/React.createElement("span", {

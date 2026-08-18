@@ -276,7 +276,7 @@ function KitchenBoard({ role }) {
   }, []);
 
   return React.createElement('div', { className: 'min-h-screen flex flex-col' },
-    React.createElement('header', { className: 'sticky top-0 z-20 bg-slate-900/95 backdrop-blur border-b border-slate-800 py-3 px-4 flex flex-wrap items-center justify-between gap-2 shrink-0' },
+    React.createElement('header', { className: 'sticky top-0 z-20 bg-slate-900/98 border-b border-slate-800 py-3 px-4 flex flex-wrap items-center justify-between gap-2 shrink-0' },
       React.createElement('h1', { className: 'font-heading text-xl sm:text-2xl font-black text-white' }, `${config.emoji} ${config.label.toUpperCase()} — BANDERILLAS COREANAS`),
       React.createElement('div', { className: 'flex items-center gap-3' },
         React.createElement('span', { className: 'text-sm sm:text-base text-slate-400 font-semibold' }, now && new Date(now).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })),
@@ -290,7 +290,7 @@ function KitchenBoard({ role }) {
       activeColumns.map(col => {
         const colOrders = orders.filter(o => o.status === col.id).sort((a, b) => a.id - b.id);
         return React.createElement('div', { key: col.id, className: `flex flex-col rounded-2xl border-2 ${col.color} ${col.headerBg}` },
-          React.createElement('div', { className: 'sticky top-[60px] z-10 py-3 px-4 border-b-2 border-white/10 flex items-center justify-between rounded-t-2xl backdrop-blur bg-slate-950/40' },
+          React.createElement('div', { className: 'sticky top-[60px] z-10 py-3 px-4 border-b-2 border-white/10 flex items-center justify-between rounded-t-2xl bg-slate-950/80' },
             React.createElement('h2', { className: `font-heading text-2xl sm:text-3xl font-black ${col.textColor}` }, `${col.emoji} ${col.title}`),
             React.createElement('span', { className: 'bg-black/40 text-white text-xl font-black w-12 h-12 rounded-full flex items-center justify-center' }, colOrders.length)
           ),

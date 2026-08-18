@@ -30,9 +30,13 @@
     body { font-family: 'Inter', sans-serif; }
     .font-heading { font-family: 'Poppins', sans-serif; }
     .glass-panel {
-      background: rgba(15, 23, 42, 0.7);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      /* Antes tenía backdrop-filter: blur(12px). Esta clase se usa en
+         cada tarjeta de pedido dentro de columnas con scroll — con varios
+         pedidos en pantalla, ese desenfoque se recalcula todo el tiempo
+         mientras se hace scroll y es la causa más común de que un panel
+         se sienta "trabado" en un celular. Se quita el blur y se sube un
+         poco la opacidad del fondo para que se vea igual de bien. */
+      background: rgba(15, 23, 42, 0.92);
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
