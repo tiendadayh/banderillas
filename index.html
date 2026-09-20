@@ -199,7 +199,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, update, runTransaction, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, push, update, runTransaction, onValue, set, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAuL5YKxucoHUKCkoz5j6m9KU1XjTP0Z2o",
@@ -219,13 +219,17 @@
     window.runTransaction = runTransaction;
     window.ref = ref;
     window.onValue = onValue;
+    window.set = set;
+    window.onDisconnect = onDisconnect;
+    window.serverTimestamp = serverTimestamp;
   </script>
 
   <script type="text/javascript">
 const {
   useState,
   useEffect,
-  useReducer
+  useReducer,
+  useRef
 } = React;
 const PHONE_NUMBER = "527442411773";
 const OPEN_HOUR = 13;
@@ -470,13 +474,15 @@ function CoatingSelector({
 }
 function PresetList({
   presets,
-  onApply
+  onApply,
+  customerName
 }) {
+  const primerNombre = customerName && customerName.trim() ? customerName.trim().split(' ')[0] : '';
   return /*#__PURE__*/React.createElement("div", {
     className: "mb-6"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "text-xs font-bold text-slate-300 uppercase tracking-wider mb-2.5"
-  }, "Recetas Recomendadas"), /*#__PURE__*/React.createElement("div", {
+  }, primerNombre ? `Recomendado para ti, ${primerNombre}` : "Recetas Recomendadas"), /*#__PURE__*/React.createElement("div", {
     className: "flex overflow-x-auto gap-2 pb-1 no-scrollbar snap-x"
   }, presets.map((preset, idx) => /*#__PURE__*/React.createElement("button", {
     key: idx,
@@ -797,6 +803,74 @@ function orderReducer(state, action) {
       return state;
   }
 }
+
+// Limpia y "capitaliza" el nombre que escribe el cliente: quita caracteres
+// raros, espacios de más, y si lo escribió todo en mayúsculas o minúsculas
+// lo acomoda (p. ej. "alexis" -> "Alexis").
+function limpiarNombreVisitante(texto) {
+  let n = (texto || '').replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40).trim();
+  if (n && (n === n.toLowerCase() || n === n.toUpperCase())) {
+    n = n.toLowerCase().replace(/(^|\s)\S/g, m => m.toUpperCase());
+  }
+  return n;
+}
+
+// Modal de bienvenida: pide el nombre al entrar (opcional), igual que en las
+// otras tiendas — se guarda en este dispositivo para saludar la próxima vez
+// y para que el admin sepa quién está viendo la tienda ahora mismo.
+function WelcomeModal({
+  onSave,
+  onSkip,
+  initialValue
+}) {
+  const [nombre, setNombre] = useState(initialValue || '');
+  const [error, setError] = useState('');
+  const editando = !!initialValue;
+  const handleGuardar = () => {
+    const limpio = limpiarNombreVisitante(nombre);
+    if (!limpio) {
+      setError(`Escribe tu nombre o toca "${editando ? 'Cancelar' : 'Omitir'}".`);
+      return;
+    }
+    onSave(limpio);
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center z-[60] p-4 animate-pop"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-3d-glass w-full max-w-sm rounded-2xl p-6 text-center"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "text-xl font-black text-white mb-1"
+  }, editando ? "¿Quién está comprando?" : "\uD83D\uDC4B ¡Bienvenido!"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-slate-300 mb-4"
+  }, editando ? "Escribe tu nombre para corregirlo." : "¿Cómo te llamas? Así te saludamos y sabemos quién nos visita."), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    value: nombre,
+    onChange: e => {
+      setNombre(e.target.value);
+      setError('');
+    },
+    onKeyDown: e => {
+      if (e.key === 'Enter') handleGuardar();
+    },
+    maxLength: 40,
+    autoFocus: true,
+    placeholder: "Tu nombre",
+    "aria-label": "Tu nombre",
+    className: "w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-center"
+  }), error && /*#__PURE__*/React.createElement("p", {
+    className: "text-red-400 text-xs mt-2"
+  }, error), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: handleGuardar,
+    className: "w-full mt-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold py-2.5 rounded-xl shadow-lg shadow-orange-500/20 active:scale-95 transition"
+  }, editando ? "Guardar" : "Entrar"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: onSkip,
+    className: "w-full mt-2 text-slate-400 text-xs py-1.5 hover:text-slate-200"
+  }, editando ? "Cancelar" : "Omitir"), /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-slate-500 mt-3 leading-relaxed"
+  }, "Solo lo usamos para saludarte y para que la tienda sepa quién la visita.")));
+}
 function App() {
   const [orderState, dispatch] = useReducer(orderReducer, initialOrderState);
   const {
@@ -821,9 +895,72 @@ function App() {
   const [validationErrors, setValidationErrors] = useState({});
   const [isOpen, setIsOpen] = useState(true);
   const [animKey, setAnimKey] = useState(0);
+  const [showWelcome, setShowWelcome] = useState(false);
   const currentPrice = (selectedBase ? selectedBase.price : 0) + (selectedDrink ? selectedDrink.price : 0);
   const cartTotalCount = cart.length;
   const cartTotalPrice = cart.reduce((a, b) => a + b.price, 0);
+
+  // ID único de esta visita, solo para el contador de "conectados" del admin.
+  // No se guarda en localStorage a propósito: cada vez que alguien entra a la
+  // tienda (o recarga la página) cuenta como una conexión nueva.
+  const visitorIdRef = useRef(null);
+  if (visitorIdRef.current === null) {
+    visitorIdRef.current = 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+  }
+
+  // Presencia: registra esta visita en Firebase (conectados/<id>) y hace que
+  // se borre sola si el cliente cierra la pestaña, se le va el internet o
+  // recarga, sin depender de que la página avise nada.
+  // (Reintenta cada 300ms hasta que window.db exista: el script de Firebase
+  // es un <script type="module">, que carga DESPUÉS del script principal
+  // de React, así que a veces este efecto corre antes de que esté listo.)
+  useEffect(() => {
+    let miRef = null;
+    const attach = () => {
+      if (!(window.db && window.ref && window.onDisconnect && window.set)) return false;
+      miRef = window.ref(window.db, `conectados/${visitorIdRef.current}`);
+      window.onDisconnect(miRef).remove();
+      return true;
+    };
+    if (attach()) {
+      return () => { if (miRef) window.set(miRef, null); };
+    }
+    const iv = setInterval(() => {
+      if (attach()) clearInterval(iv);
+    }, 300);
+    return () => {
+      clearInterval(iv);
+      if (miRef) window.set(miRef, null);
+    };
+  }, []);
+
+  // Mantiene actualizado, para que el admin lo vea en vivo: el nombre del
+  // cliente (si ya lo escribió), en qué parte de la compra va y cuántos
+  // artículos lleva en el carrito. También reintenta si window.db aún no
+  // está listo la primera vez.
+  useEffect(() => {
+    let cancelled = false;
+    const write = () => {
+      if (!(window.db && window.ref && window.set)) return false;
+      const miRef = window.ref(window.db, `conectados/${visitorIdRef.current}`);
+      window.set(miRef, {
+        nombre: customerName.trim() || 'Visitante',
+        vista: isCartOpen ? 'Viendo su carrito' : 'Armando su banderilla',
+        articulos: cart.length,
+        desde: window.serverTimestamp ? window.serverTimestamp() : Date.now()
+      });
+      return true;
+    };
+    if (!write()) {
+      const iv = setInterval(() => {
+        if (cancelled) { clearInterval(iv); return; }
+        if (write()) clearInterval(iv);
+      }, 300);
+      return () => { cancelled = true; clearInterval(iv); };
+    }
+    return () => { cancelled = true; };
+  }, [customerName, isCartOpen, cart.length]);
+
   useEffect(() => {
     const checkOpenStatus = () => {
       const now = new Date();
@@ -842,6 +979,35 @@ function App() {
       } catch (e) {}
     }
   }, []);
+
+  // Nombre del cliente: si ya lo dio antes en este dispositivo, lo usamos
+  // directo (así el carrito ya llega con su nombre puesto). Si nunca lo dio
+  // y tampoco tocó "Omitir" antes, se le pregunta con el modal de bienvenida.
+  useEffect(() => {
+    try {
+      const nombreGuardado = localStorage.getItem('banderilla_nombre_cliente');
+      const omitido = localStorage.getItem('banderilla_nombre_cliente_omitido');
+      if (nombreGuardado) {
+        setCustomerName(nombreGuardado);
+      } else if (!omitido) {
+        setShowWelcome(true);
+      }
+    } catch (e) {}
+  }, []);
+  const handleGuardarNombreBienvenida = nombre => {
+    try {
+      localStorage.setItem('banderilla_nombre_cliente', nombre);
+      localStorage.removeItem('banderilla_nombre_cliente_omitido');
+    } catch (e) {}
+    setCustomerName(nombre);
+    setShowWelcome(false);
+  };
+  const handleOmitirBienvenida = () => {
+    try {
+      localStorage.setItem('banderilla_nombre_cliente_omitido', '1');
+    } catch (e) {}
+    setShowWelcome(false);
+  };
   const triggerAnimation = () => setAnimKey(prev => prev + 1);
   const handleBaseChange = base => {
     playSound('click');
@@ -1145,7 +1311,13 @@ function App() {
     className: `w-2 h-2 rounded-full ${isOpen ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`
   }), isOpen ? 'Abierto Ahora' : 'Local Cerrado')), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-300 font-medium tracking-wide"
-  }, "Horario: 1:00 PM - 8:00 PM")), /*#__PURE__*/React.createElement("div", {
+  }, "Horario: 1:00 PM - 8:00 PM"), customerName.trim() && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setShowWelcome(true),
+    className: "mt-1 text-base sm:text-lg font-black text-orange-300 hover:text-orange-200 transition"
+  }, "\uD83D\uDC4B ¡Hola, ", customerName.trim().split(' ')[0], "! ", /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-slate-500 font-normal underline decoration-dotted"
+  }, "(¿no eres tú?)"))), /*#__PURE__*/React.createElement("div", {
     className: "relative flex justify-center items-center w-full min-h-[180px] md:min-h-[280px]"
   }, /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-3 gap-2 md:gap-4 w-full max-w-md"
@@ -1231,7 +1403,8 @@ function App() {
     className: "text-xs text-slate-400 hover:text-orange-400 transition font-medium flex items-center gap-1 card-3d-glass border border-slate-800 px-2.5 py-1 rounded-lg hover:-translate-y-0.5"
   }, "🔄 Reiniciar selección")), /*#__PURE__*/React.createElement(PresetList, {
     presets: chefPresets,
-    onApply: applyPreset
+    onApply: applyPreset,
+    customerName: customerName
   }), savedFavorites.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "mb-6 card-3d-glass p-3.5 rounded-2xl border border-white/10"
   }, /*#__PURE__*/React.createElement("h3", {
@@ -1395,6 +1568,10 @@ function App() {
     setDeliveryAddress: setDeliveryAddress,
     setPaymentMethod: setPaymentMethod,
     setDeliveryType: setDeliveryType
+  }), showWelcome && /*#__PURE__*/React.createElement(WelcomeModal, {
+    onSave: handleGuardarNombreBienvenida,
+    onSkip: handleOmitirBienvenida,
+    initialValue: customerName.trim()
   }));
 }
 ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));

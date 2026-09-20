@@ -354,6 +354,17 @@ const CupIcon = p => /*#__PURE__*/React.createElement(Icon, p, /*#__PURE__*/Reac
   x2: "14",
   y2: "4"
 }));
+const UsersIcon = p => /*#__PURE__*/React.createElement(Icon, p, /*#__PURE__*/React.createElement("path", {
+  d: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
+}), /*#__PURE__*/React.createElement("circle", {
+  cx: "9",
+  cy: "7",
+  r: "4"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M23 21v-2a4 4 0 0 0-3-3.87"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M16 3.13a4 4 0 0 1 0 7.75"
+}));
 const TrophyIcon = p => /*#__PURE__*/React.createElement(Icon, p, /*#__PURE__*/React.createElement("path", {
   d: "M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"
 }), /*#__PURE__*/React.createElement("path", {
@@ -538,6 +549,8 @@ function App() {
   });
   const [showReports, setShowReports] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [conectados, setConectados] = useState({});
+  const [showConectados, setShowConectados] = useState(false);
   const now = useNow(30000);
   const prevOrderCount = useRef(0);
   const soundEnabledRef = useRef(soundEnabled);
@@ -546,6 +559,8 @@ function App() {
   const [hasNewOrder, setHasNewOrder] = useState(false);
   const originalTitleRef = useRef(document.title);
   const prevOrderKeysRef = useRef(new Set());
+  const prevConectadosKeysRef = useRef(new Set());
+  const firstConectadosLoad = useRef(true);
   const [newOrderKeys, setNewOrderKeys] = useState(() => new Set());
   const newOrderKeysRef = useRef(newOrderKeys);
   const repeatSoundIntervalRef = useRef(null);
@@ -816,6 +831,20 @@ function App() {
         clearInterval(checkFirebase);
         const ordersRef = window.ref(window.db, 'pedidos');
         const historyRef = window.ref(window.db, 'pedidos_historial');
+        const conectadosRef = window.ref(window.db, 'conectados');
+        // Tiempo real (sin sondeo): cada vez que alguien entra, sale o
+        // cambia de vista en la tienda, este listener se dispara solo.
+        window.onValue(conectadosRef, snapshot => {
+          const data = snapshot.val() || {};
+          const currentKeys = new Set(Object.keys(data));
+          if (!firstConectadosLoad.current) {
+            const arrivedKeys = [...currentKeys].filter(k => !prevConectadosKeysRef.current.has(k));
+            if (arrivedKeys.length > 0 && soundEnabledRef.current) playConnectSound();
+          }
+          prevConectadosKeysRef.current = currentKeys;
+          firstConectadosLoad.current = false;
+          setConectados(data);
+        });
         window.onValue(ordersRef, snapshot => {
           const data = snapshot.val();
           if (data) {
@@ -883,6 +912,28 @@ function App() {
           osc.start(ctx.currentTime + delay);
           osc.stop(ctx.currentTime + delay + 0.3);
         });
+      };
+      if (ctx.state === 'suspended') ctx.resume().then(fire);else fire();
+    } catch (e) {}
+  };
+
+  // Aviso corto y distinto al de "pedido nuevo": un solo "ping" suave, para
+  // que sepas que alguien entró a la tienda sin confundirlo con un pedido.
+  const playConnectSound = () => {
+    try {
+      const ctx = getAudioCtx();
+      const fire = () => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(660, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(990, ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.22);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.22);
       };
       if (ctx.state === 'suspended') ctx.resume().then(fire);else fire();
     } catch (e) {}
@@ -1176,6 +1227,11 @@ function App() {
   }, "Ventas"), /*#__PURE__*/React.createElement("span", {
     className: "text-sm sm:text-base md:text-lg font-bold text-emerald-400"
   }, "$", totalSales, " MXN")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowConectados(true),
+    className: "flex items-center gap-1.5 text-[10px] sm:text-xs px-2.5 sm:px-3 py-1.5 rounded-full border border-sky-500/60 text-sky-300 bg-sky-500/10 hover:border-sky-400 hover:text-sky-200 transition whitespace-nowrap"
+  }, /*#__PURE__*/React.createElement(UsersIcon, {
+    size: 13
+  }), " ", Object.keys(conectados).length, " en línea"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowReports(true),
     className: "flex items-center gap-1.5 text-[10px] sm:text-xs px-2.5 sm:px-3 py-1.5 rounded-full border border-slate-600 text-slate-300 hover:border-orange-500 hover:text-orange-400 transition whitespace-nowrap"
   }, /*#__PURE__*/React.createElement(BarChartIcon, {
@@ -1207,6 +1263,10 @@ function App() {
     onResetReport: resetReport,
     onResetCounter: resetOrderCounter,
     onExportPDF: exportReportPDF
+  }), showConectados && /*#__PURE__*/React.createElement(ConectadosModal, {
+    conectados: conectados,
+    now: now,
+    onClose: () => setShowConectados(false)
   }), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-x-auto p-3 md:p-4 flex gap-3 md:gap-4 no-scrollbar items-stretch snap-x snap-mandatory"
   }, COLUMNS.map(col => {
@@ -1585,6 +1645,65 @@ function PrintReport({
 /* ------------------------------------------------------------------ */
 /* Modal de reportes                                                    */
 /* ------------------------------------------------------------------ */
+function VisitanteCard({
+  v,
+  now
+}) {
+  const infoDiv = /*#__PURE__*/React.createElement("div", {
+    className: "min-w-0"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-bold text-white truncate"
+  }, v.nombre || 'Visitante'), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-slate-400 truncate"
+  }, v.vista || ''), /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-slate-500"
+  }, timeAgo(v.desde, now)));
+  const badgeDiv = /*#__PURE__*/React.createElement("div", {
+    className: "shrink-0 bg-sky-500/10 border border-sky-500/40 text-sky-300 text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap"
+  }, "🛒 ", v.articulos || 0);
+  return /*#__PURE__*/React.createElement("div", {
+    key: v.id,
+    className: "bg-slate-900/70 rounded-xl p-3 border border-slate-700 flex items-center justify-between gap-3"
+  }, infoDiv, badgeDiv);
+}
+function ConectadosModal({
+  conectados,
+  now,
+  onClose
+}) {
+  const visitantes = Object.entries(conectados || {}).map(([id, v]) => ({
+    id,
+    ...v
+  })).sort((a, b) => (b.desde || 0) - (a.desde || 0));
+  const headerRow = /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between items-center mb-4 border-b border-white/10 pb-2"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "font-heading text-base sm:text-lg font-black text-sky-400 flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(UsersIcon, {
+    size: 17
+  }), " Conectados ahora (", visitantes.length, ")"), /*#__PURE__*/React.createElement("button", {
+    onClick: onClose,
+    className: "text-slate-400 hover:text-white p-1"
+  }, /*#__PURE__*/React.createElement(XIcon, {
+    size: 18
+  })));
+  const lista = visitantes.length === 0 ? /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-slate-500 text-center py-6"
+  }, "Nadie está viendo la tienda en este momento.") : /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, visitantes.map(v => /*#__PURE__*/React.createElement(VisitanteCard, {
+    key: v.id,
+    v: v,
+    now: now
+  })));
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-3 sm:p-4",
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "glass-panel w-full max-w-lg rounded-2xl p-4 sm:p-5 shadow-2xl max-h-[85vh] overflow-y-auto no-scrollbar",
+    onClick: e => e.stopPropagation()
+  }, headerRow, lista));
+}
 function ReportsModal({
   report,
   onClose,
