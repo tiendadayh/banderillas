@@ -908,45 +908,30 @@ function App() {
     visitorIdRef.current = 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
   }
 
-  // Presencia: registra esta visita en Firebase (conectados/<id>) y hace que
-  // se borre sola si el cliente cierra la pestaña, se le va el internet o
-  // recarga, sin depender de que la página avise nada.
+  // Presencia: registra esta visita en Firebase (conectados/<id>).
   // (Reintenta cada 300ms hasta que window.db exista: el script de Firebase
   // es un <script type="module">, que carga DESPUÉS del script principal
   // de React, así que a veces este efecto corre antes de que esté listo.)
-  useEffect(() => {
-    let miRef = null;
-    const attach = () => {
-      if (!(window.db && window.ref && window.onDisconnect && window.set)) return false;
-      miRef = window.ref(window.db, `conectados/${visitorIdRef.current}`);
-      window.onDisconnect(miRef).remove();
-      return true;
-    };
-    if (attach()) {
-      return () => { if (miRef) window.set(miRef, null); };
-    }
-    const iv = setInterval(() => {
-      if (attach()) clearInterval(iv);
-    }, 300);
-    return () => {
-      clearInterval(iv);
-      if (miRef) window.set(miRef, null);
-    };
-  }, []);
+  //
+  // Ref con los datos más recientes (nombre/vista/artículos), para poder
+  // volver a escribirlos cada vez que Firebase se reconecta, sin depender
+  // de que el cliente además cambie algo en ese momento.
+  const presenceDataRef = useRef(null);
+  presenceDataRef.current = {
+    nombre: customerName.trim() || 'Visitante',
+    vista: isCartOpen ? 'Viendo su carrito' : 'Armando su banderilla',
+    articulos: cart.length
+  };
 
-  // Mantiene actualizado, para que el admin lo vea en vivo: el nombre del
-  // cliente (si ya lo escribió), en qué parte de la compra va y cuántos
-  // artículos lleva en el carrito. También reintenta si window.db aún no
-  // está listo la primera vez.
+  // Efecto A: cada vez que cambian nombre/vista/artículos, escribe de una
+  // vez el dato actualizado (con reintento si Firebase aún no está listo).
   useEffect(() => {
     let cancelled = false;
     const write = () => {
       if (!(window.db && window.ref && window.set)) return false;
       const miRef = window.ref(window.db, `conectados/${visitorIdRef.current}`);
       window.set(miRef, {
-        nombre: customerName.trim() || 'Visitante',
-        vista: isCartOpen ? 'Viendo su carrito' : 'Armando su banderilla',
-        articulos: cart.length,
+        ...presenceDataRef.current,
         desde: window.serverTimestamp ? window.serverTimestamp() : Date.now()
       });
       return true;
@@ -960,6 +945,49 @@ function App() {
     }
     return () => { cancelled = true; };
   }, [customerName, isCartOpen, cart.length]);
+
+  // Efecto B: se borra solo si el cliente cierra la pestaña, se le va el
+  // internet o recarga (onDisconnect). Además escucha ".info/connected"
+  // (una ruta especial de Firebase) para saber cuándo la conexión se
+  // restablece: en pestañas puestas en segundo plano, el navegador puede
+  // cortar la conexión sin avisar, y Firebase "olvida" el onDisconnect
+  // anterior — sin este re-armado, la ficha del visitante se quedaba sin
+  // reaparecer en el admin hasta que tocaba algo en la página.
+  useEffect(() => {
+    let miRef = null;
+    let unsubConnected = null;
+    const attach = () => {
+      if (!(window.db && window.ref && window.onDisconnect && window.onValue && window.set)) return false;
+      miRef = window.ref(window.db, `conectados/${visitorIdRef.current}`);
+      unsubConnected = window.onValue(window.ref(window.db, '.info/connected'), snap => {
+        if (snap.val() === true) {
+          window.onDisconnect(miRef).remove();
+          if (presenceDataRef.current) {
+            window.set(miRef, {
+              ...presenceDataRef.current,
+              desde: window.serverTimestamp ? window.serverTimestamp() : Date.now()
+            });
+          }
+        }
+      });
+      return true;
+    };
+    if (attach()) {
+      return () => {
+        if (unsubConnected) unsubConnected();
+        if (miRef) window.set(miRef, null);
+      };
+    }
+    const iv = setInterval(() => {
+      if (attach()) clearInterval(iv);
+    }, 300);
+    return () => {
+      clearInterval(iv);
+      if (unsubConnected) unsubConnected();
+      if (miRef) window.set(miRef, null);
+    };
+  }, []);
+
 
   useEffect(() => {
     const checkOpenStatus = () => {
