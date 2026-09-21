@@ -1288,7 +1288,7 @@ function App() {
   }, "Ver Carrito"), /*#__PURE__*/React.createElement("span", {
     className: "text-sm font-black"
   }, "$", cartTotalPrice, " MXN"))), /*#__PURE__*/React.createElement("div", {
-    className: "w-full md:w-1/2 min-h-[340px] max-h-[45vh] md:max-h-none md:min-h-[520px] md:h-screen sticky top-0 md:relative z-30 bg-slate-950/95 flex flex-col items-center justify-center p-4 md:p-12 overflow-y-auto md:overflow-hidden border-b md:border-b-0 md:border-r border-white/10 shadow-xl md:shadow-none"
+    className: "w-full md:w-1/2 min-h-[340px] max-h-[45vh] md:max-h-none md:min-h-[520px] md:h-screen sticky top-0 md:relative z-30 bg-slate-950/95 flex flex-col items-center justify-start p-4 md:p-12 overflow-y-auto border-b md:border-b-0 md:border-r border-white/10 shadow-xl md:shadow-none"
     // Nota: antes tenía "backdrop-blur-xl" y "perspective: 1000px" en línea.
     // Este panel queda pegado ("sticky") mientras el cliente hace scroll
     // en el celular, así que un desenfoque aquí es de los efectos más
@@ -1318,6 +1318,20 @@ function App() {
   }, "\uD83D\uDC4B ¡Hola, ", customerName.trim().split(' ')[0], "! ", /*#__PURE__*/React.createElement("span", {
     className: "text-xs text-slate-500 font-normal underline decoration-dotted"
   }, "(¿no eres tú?)"))), /*#__PURE__*/React.createElement("div", {
+    className: "w-full flex justify-center z-20"
+  }, selectedBase ? /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 card-3d-glass border-orange-500/60 px-3 py-1 md:px-4 md:py-1.5 rounded-xl md:rounded-2xl shadow-xl"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-sm md:text-base"
+  }, selectedBase.icon), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col text-left"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-orange-400 font-extrabold uppercase tracking-wider"
+  }, "Orden Seleccionada"), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold text-white"
+  }, selectedBase.name))) : /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-slate-300 card-3d-glass px-2.5 py-1 md:px-3 md:py-1.5 rounded-xl border-slate-700"
+  }, "Sin Selección Base")), /*#__PURE__*/React.createElement("div", {
     className: "relative flex justify-center items-center w-full min-h-[180px] md:min-h-[280px]"
   }, /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-3 gap-2 md:gap-4 w-full max-w-md"
@@ -1354,19 +1368,7 @@ function App() {
     }, "Elige Cubierto")));
   }))), /*#__PURE__*/React.createElement("div", {
     className: "w-full flex flex-wrap items-center justify-center gap-2 md:gap-3 z-20 pt-1 md:pt-2"
-  }, selectedBase ? /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2 card-3d-glass border-orange-500/60 px-3 py-1 md:px-4 md:py-1.5 rounded-xl md:rounded-2xl shadow-xl"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-sm md:text-base"
-  }, selectedBase.icon), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-col text-left"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-xs text-orange-400 font-extrabold uppercase tracking-wider"
-  }, "Orden Seleccionada"), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs font-bold text-white"
-  }, selectedBase.name))) : /*#__PURE__*/React.createElement("span", {
-    className: "text-xs text-slate-300 card-3d-glass px-2.5 py-1 md:px-3 md:py-1.5 rounded-xl border-slate-700"
-  }, "Sin Selección Base"), selectedSauces.map(sObj => /*#__PURE__*/React.createElement("div", {
+  }, selectedSauces.map(sObj => /*#__PURE__*/React.createElement("div", {
     key: sObj.id,
     className: "flex items-center gap-1.5 md:gap-2 card-3d-glass px-3 py-1 md:px-4 md:py-2 rounded-xl md:rounded-2xl shadow-xl"
   }, /*#__PURE__*/React.createElement(SafeImage, {
@@ -1589,6 +1591,22 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   ];
   const MAX_AGE_HOURS = 48;
 
+  // Estimación de tiempo por posición en la cola. Son minutos aproximados
+  // ("más o menos"), ajustables aquí si en la práctica se ven muy cortos o
+  // muy largos.
+  const MIN_POR_PEDIDO_ADELANTE = 6; // minutos que se asume toma cada pedido que va antes
+  const MIN_PREPARACION_PROPIA = 8; // minutos para preparar el pedido del cliente, una vez le toca
+  const MIN_ENTREGA_DOMICILIO = 15; // minutos extra de reparto, solo si es a domicilio
+
+  function formatHora(date) {
+    let h = date.getHours();
+    const m = date.getMinutes();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    if (h === 0) h = 12;
+    return `${h}:${String(m).padStart(2, '0')} ${ampm}`;
+  }
+
   function stepIndex(status) {
     const i = STEPS.findIndex(s => s.id === status);
     return i === -1 ? 0 : i;
@@ -1598,9 +1616,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     const [liveOrder, setLiveOrder] = useState(null);
     const [archived, setArchived] = useState(null);
     const [loadFailed, setLoadFailed] = useState(false);
+    const [colaPublica, setColaPublica] = useState(null);
     useEffect(() => {
       let unsubActive = null;
       let unsubHistory = null;
+      let unsubCola = null;
       let cancelled = false;
       // Si Firebase tarda demasiado o no responde (permisos, red, etc.),
       // dejamos de mostrar el esqueleto de carga en blanco y avisamos.
@@ -1617,6 +1637,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
           snap => { clearTimeout(timeoutId); setArchived(snap.val()); },
           () => { clearTimeout(timeoutId); if (!cancelled) setLoadFailed(true); }
         );
+        // Cola pública: solo folios + estado (sin datos de nadie), para saber
+        // cuántos pedidos van antes que el mío. Se actualiza sola en vivo
+        // conforme la cocina va marcando pedidos como listos.
+        unsubCola = window.onValue(
+          window.ref(window.db, 'cola_publica'),
+          snap => { setColaPublica(snap.val() || {}); },
+          () => { /* si falla, simplemente no se muestra el estimado */ }
+        );
         return true;
       };
       if (!attach()) {
@@ -1628,6 +1656,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
         clearTimeout(timeoutId);
         if (unsubActive) unsubActive();
         if (unsubHistory) unsubHistory();
+        if (unsubCola) unsubCola();
       };
     }, [tracked.key]);
 
@@ -1650,6 +1679,23 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     if (!order) return null; // el pedido ya no existe (fue borrado)
 
     const idx = stepIndex(status);
+
+    // Mientras el pedido sigue "Recibido" (aún no empieza a prepararse), se
+    // calcula cuántos pedidos activos (recibidos/preparando) tienen un folio
+    // menor al mío — esos son los que van delante — y con eso una hora
+    // aproximada de cuándo empezaría el mío.
+    let pedidosAdelante = null;
+    let horaEstimadaTexto = null;
+    if (status === 'pending' && colaPublica && tracked.orderNumber) {
+      pedidosAdelante = Object.entries(colaPublica).filter(([num, st]) =>
+        Number(num) < Number(tracked.orderNumber) && (st === 'pending' || st === 'preparing')
+      ).length;
+      const extraEntrega = order.deliveryType === 'delivery' ? MIN_ENTREGA_DOMICILIO : 0;
+      const minutosEstimados = pedidosAdelante * MIN_POR_PEDIDO_ADELANTE + MIN_PREPARACION_PROPIA + extraEntrega;
+      const horaEstimada = new Date(Date.now() + minutosEstimados * 60000);
+      horaEstimadaTexto = formatHora(horaEstimada);
+    }
+
     return h('div', { className: 'bg-slate-800/70 border border-slate-700 rounded-xl p-3' },
       h('div', { className: 'flex justify-between items-baseline mb-2' },
         h('span', { className: 'font-bold text-white text-sm' }, `Pedido #${tracked.orderNumber || '----'}`),
@@ -1665,6 +1711,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
           ),
           i < STEPS.length - 1 && h('div', { className: `h-0.5 flex-1 -mt-4 ${i < idx ? 'bg-orange-500' : 'bg-slate-700'}` })
         ))
+      ),
+      pedidosAdelante !== null && h('div', { className: 'mt-2.5 pt-2 border-t border-slate-700/70 flex items-center justify-between gap-2' },
+        h('span', { className: 'text-[10px] text-slate-300' },
+          pedidosAdelante === 0
+            ? '🔥 ¡Sigues tú! Estás a punto de empezar a prepararse.'
+            : `🔢 Tienes ${pedidosAdelante} pedido${pedidosAdelante === 1 ? '' : 's'} delante del tuyo.`
+        ),
+        horaEstimadaTexto && h('span', { className: 'text-[10px] font-bold text-amber-400 whitespace-nowrap' }, `~ ${horaEstimadaTexto}`)
       )
     );
   }
@@ -1713,11 +1767,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     );
   }
 
-  // Seguimiento de "Mis Pedidos" desactivado: por ahora no se monta el
-  // widget (el botón/panel flotante no aparece). El código queda aquí por
-  // si se vuelve a activar más adelante (por ejemplo, al ajustar los
-  // permisos de lectura en las reglas de Firebase).
-  // ReactDOM.createRoot(document.getElementById('tracking-root')).render(h(TrackingWidget, null));
+  // Seguimiento de "Mis Pedidos": requiere las reglas de Firebase con lectura
+  // pública por folio conocido en "pedidos/$orderId" y "pedidos_historial/$orderId"
+  // (ver mensaje con las reglas actualizadas). Con eso ya activo:
+  ReactDOM.createRoot(document.getElementById('tracking-root')).render(h(TrackingWidget, null));
 })();
   </script>
   <!-- Deslizar hacia abajo para actualizar -->

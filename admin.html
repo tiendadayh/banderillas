@@ -59,7 +59,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, onValue, update, remove, push, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, onValue, update, remove, push, runTransaction, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -82,6 +82,7 @@
     window.remove = remove;
     window.push = push;
     window.runTransaction = runTransaction;
+    window.set = set;
     window.auth = auth;
     window.onAuthStateChanged = onAuthStateChanged;
     window.signInWithEmailAndPassword = signInWithEmailAndPassword;
@@ -876,12 +877,27 @@ function App() {
             firstOrdersLoad.current = false;
             prevOrderCount.current = loadedOrders.length;
             setOrders(loadedOrders);
+
+            // Cola pública: solo folio (# de pedido) + estado, SIN nombre, teléfono
+            // ni dirección. Así el cliente en su celular puede calcular "cuántos
+            // pedidos tengo delante" sin tener que iniciar sesión ni poder ver
+            // los datos de nadie más.
+            if (window.db && window.ref && window.set) {
+              const colaPublica = {};
+              loadedOrders.forEach(o => {
+                if (o.orderNumber) colaPublica[o.orderNumber] = o.status;
+              });
+              window.set(window.ref(window.db, 'cola_publica'), colaPublica);
+            }
           } else {
             prevOrderKeysRef.current = new Set();
             setNewOrderKeys(new Set());
             setOrders([]);
             prevOrderCount.current = 0;
             firstOrdersLoad.current = false;
+            if (window.db && window.ref && window.set) {
+              window.set(window.ref(window.db, 'cola_publica'), null);
+            }
           }
         });
         window.onValue(historyRef, snapshot => {
